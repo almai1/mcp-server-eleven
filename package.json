@@ -21,7 +21,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/almai1/voiceforge-mcp.git"
+        "url": "https://github.com/almai1/mcp-server-eleven.git"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.0.0",

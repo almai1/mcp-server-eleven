@@ -20,7 +20,7 @@ Aggiungi a `~/.gemini/settings.json` (Antigravity) o `~/.cursor/mcp.json` (Curso
   "mcpServers": {
     "voiceforge": {
       "command": "npx",
-      "args": ["-y", "github:almai1/voiceforge-mcp"],
+      "args": ["-y", "github:almai1/mcp-server-eleven"],
       "env": {
         "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
       }
