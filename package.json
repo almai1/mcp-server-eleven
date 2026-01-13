@@ -1,0 +1,33 @@
+{
+    "name": "voiceforge-mcp",
+    "version": "1.0.0",
+    "description": "MCP client for VoiceForge AI - Manage AI agents from Cursor, Antigravity, or any MCP-compatible assistant",
+    "main": "index.js",
+    "bin": {
+        "voiceforge-mcp": "./index.js"
+    },
+    "scripts": {
+        "start": "node index.js"
+    },
+    "keywords": [
+        "mcp",
+        "voiceforge",
+        "ai-agents",
+        "gemini",
+        "cursor",
+        "antigravity"
+    ],
+    "author": "almai1",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/almai1/voiceforge-mcp.git"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "zod": "^3.22.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
