@@ -4,15 +4,14 @@ Client MCP per gestire agenti AI VoiceForge da **Cursor**, **Antigravity (Gemini
 
 ## 🚀 Quick Start
 
-### 1. Installa
+### 1. Ottieni la tua API Key
 
-```bash
-npm install -g voiceforge-mcp
-# oppure
-npx voiceforge-mcp
-```
+1. Vai a https://voiceforge.super-chatbot.com
+2. Registrati o fai login
+3. Dashboard → **API Keys** → Crea nuova key
+4. Copia la key (inizia con `vf_...`)
 
-### 2. Configura
+### 2. Configura il tuo assistente
 
 Aggiungi a `~/.gemini/settings.json` (Antigravity) o `~/.cursor/mcp.json` (Cursor):
 
@@ -21,19 +20,21 @@ Aggiungi a `~/.gemini/settings.json` (Antigravity) o `~/.cursor/mcp.json` (Curso
   "mcpServers": {
     "voiceforge": {
       "command": "npx",
-      "args": ["voiceforge-mcp"],
+      "args": ["-y", "github:almai1/voiceforge-mcp"],
       "env": {
-        "VOICEFORGE_API_KEY": "vf_TUA_API_KEY"
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
       }
     }
   }
 }
 ```
 
-### 3. Ottieni API Key
+> ⚠️ **Sostituisci** `vf_LA_TUA_API_KEY_QUI` con la tua API key personale!
 
-1. Vai a https://voiceforge.super-chatbot.com
-2. Login → API Keys → Crea nuova key
+### 3. Riavvia e Testa
+
+Riavvia il tuo assistente e prova:
+> "elenca i miei agenti VoiceForge"
 
 ## 🛠️ Tools Disponibili
 
@@ -51,12 +52,13 @@ Aggiungi a `~/.gemini/settings.json` (Antigravity) o `~/.cursor/mcp.json` (Curso
 
 ## 💬 Esempi d'uso
 
-> "Crea un agente customer service per un'agenzia viaggi"
+> "Crea un agente customer service per un'agenzia viaggi che parla italiano"
 
-> "Aggiungi alla knowledge base dell'agente le FAQ del sito"
+> "Aggiungi alla knowledge base le FAQ dal sito www.esempio.com"
 
-> "Lista tutti i miei agenti"
+> "Aggiorna il prompt di sistema dell'agente per renderlo più formale"
 
 ## 📄 License
 
 MIT
+
