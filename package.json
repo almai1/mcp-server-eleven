@@ -1,6 +1,6 @@
 {
     "name": "voiceforge-mcp",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "MCP client for VoiceForge AI - Manage AI agents from Cursor, Antigravity, or any MCP-compatible assistant",
     "main": "index.js",
     "bin": {

@@ -137,8 +137,9 @@ npm install
 
 ---
 
-## 🛠️ Tools Disponibili
+## 🛠️ Tools Disponibili (50+)
 
+### 👤 Agenti
 | Tool | Descrizione |
 |------|-------------|
 | `list_agents` | Lista tutti gli agenti |
@@ -146,10 +147,118 @@ npm install
 | `create_agent` | Crea nuovo agente |
 | `update_agent` | Modifica agente |
 | `delete_agent` | Elimina agente |
+
+### 📚 Knowledge Base
+| Tool | Descrizione |
+|------|-------------|
 | `list_knowledge` | Lista knowledge base |
 | `add_knowledge_text` | Aggiungi testo |
 | `add_knowledge_url` | Aggiungi URL |
-| `chat` | Invia messaggio |
+
+### 💬 Chat
+| Tool | Descrizione |
+|------|-------------|
+| `chat` | Invia messaggio a un agente |
+
+### 📅 Calendario
+| Tool | Descrizione |
+|------|-------------|
+| `list_calendar_events` | Lista eventi |
+| `create_calendar_event` | Crea evento |
+| `update_calendar_event` | Modifica evento |
+| `delete_calendar_event` | Elimina evento |
+| `list_calendar_users` | Lista utenti calendario |
+| `add_calendar_user` | Aggiungi utente |
+| `update_calendar_user` | Modifica utente |
+| `remove_calendar_user` | Rimuovi utente |
+
+### 🔗 Webhooks
+| Tool | Descrizione |
+|------|-------------|
+| `list_webhooks` | Lista webhook |
+| `create_webhook` | Crea webhook |
+| `update_webhook` | Modifica webhook |
+| `delete_webhook` | Elimina webhook |
+| `test_webhook` | Testa webhook |
+
+### ⚙️ Workflows
+| Tool | Descrizione |
+|------|-------------|
+| `list_workflows` | Lista workflow |
+| `get_workflow` | Dettagli workflow |
+| `create_workflow` | Crea workflow |
+| `update_workflow` | Modifica workflow |
+| `delete_workflow` | Elimina workflow |
+| `execute_workflow` | Esegui workflow |
+| `publish_workflow` | Pubblica versione |
+
+### 🔌 Integrazioni
+| Tool | Descrizione |
+|------|-------------|
+| `list_integrations` | Lista integrazioni |
+| `get_integration` | Dettagli integrazione |
+| `create_integration` | Configura integrazione |
+| `update_integration` | Modifica integrazione |
+| `delete_integration` | Elimina integrazione |
+
+### 📊 Analytics
+| Tool | Descrizione |
+|------|-------------|
+| `get_analytics` | Statistiche e report |
+
+### 🔑 API Keys
+| Tool | Descrizione |
+|------|-------------|
+| `list_api_keys` | Lista API keys |
+| `create_api_key` | Crea nuova key |
+| `revoke_api_key` | Revoca key |
+
+### 🎤 Voci
+| Tool | Descrizione |
+|------|-------------|
+| `list_voices` | Lista voci disponibili |
+| `get_voice` | Dettagli voce |
+| `clone_voice` | Clona voce da audio |
+| `update_voice_settings` | Modifica impostazioni |
+| `delete_voice` | Elimina voce |
+
+### 🔊 TTS/STT
+| Tool | Descrizione |
+|------|-------------|
+| `generate_speech` | Text-to-Speech |
+| `transcribe_audio` | Speech-to-Text |
+
+### 📞 Telefonia
+| Tool | Descrizione |
+|------|-------------|
+| `list_phone_numbers` | Lista numeri |
+| `configure_phone_number` | Configura numero |
+
+### 👥 Teams
+| Tool | Descrizione |
+|------|-------------|
+| `list_teams` | Lista team |
+| `create_team` | Crea team |
+| `add_team_member` | Aggiungi membro |
+| `remove_team_member` | Rimuovi membro |
+
+### 🏢 Organizzazioni
+| Tool | Descrizione |
+|------|-------------|
+| `list_organizations` | Lista organizzazioni |
+| `get_organization` | Dettagli organizzazione |
+
+### 🔧 Strumenti Agente
+| Tool | Descrizione |
+|------|-------------|
+| `list_agent_tools` | Lista strumenti |
+| `configure_agent_tool` | Configura strumento |
+
+### 🖼️ Widget
+| Tool | Descrizione |
+|------|-------------|
+| `get_widget_config` | Config widget |
+| `update_widget_config` | Personalizza widget |
 
 ---
 
