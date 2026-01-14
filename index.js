@@ -31,24 +31,42 @@ if (!API_KEY) {
 // HTTP Client
 async function api(path, method = 'GET', body = null) {
     const url = `${BASE_URL}${path}`;
+    // Trim key to avoid copy-paste whitespace issues
+    const cleanKey = API_KEY.trim();
+
     const opts = {
         method,
         headers: {
-            'Authorization': `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json',
-            'User-Agent': `voiceforge-mcp/${VERSION}`
+            'Authorization': `Bearer ${cleanKey}`,
+            'Content-Type': 'application/json'
+            // Removed custom User-Agent to avoid potential WAF blocking
         }
     };
     if (body) opts.body = JSON.stringify(body);
 
-    const res = await fetch(url, opts);
+    try {
+        const res = await fetch(url, opts);
 
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        if (!res.ok) {
+            const text = await res.text();
+            // Log full error details to stderr (MCP logs)
+            console.error(`[MCP API Error] ${method} ${url} -> ${res.status}`);
+            console.error(`[MCP API Response] ${text}`);
+
+            let err;
+            try {
+                err = JSON.parse(text);
+            } catch {
+                err = { error: text || res.statusText };
+            }
+            throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        return res.json();
+    } catch (error) {
+        // Re-throw with clean message
+        throw error;
     }
-
-    return res.json();
 }
 
 // Success/Error response helpers
@@ -69,6 +87,18 @@ const server = new McpServer({
 // ======================
 // AGENT TOOLS
 // ======================
+
+server.tool(
+    'debug_auth',
+    'Debug Authentication headers (echo server)',
+    {},
+    async () => {
+        try {
+            const result = await api('/api/debug-auth', 'POST', { debug: true });
+            return ok(`✅ Auth Debug Info:\n\nUser ID: ${result.userId || 'NULL'}\nAuth Source: ${result.authResult?.source || 'NULL'}\nAuthorization Header: ${result.receivedHeaders?.authorization || 'MISSING'}\n\nNote: If this works, your Key is VALID.`);
+        } catch (e) { return err(e); }
+    }
+);
 
 server.tool(
     'list_agents',
@@ -212,7 +242,8 @@ server.tool(
     async ({ agentId, message, conversationId }) => {
         try {
             const result = await api(`/api/agents/${agentId}/chat`, 'POST', { message, conversationId });
-            return ok(`🤖 ${result.response}\n\n[Conversazione: ${result.conversationId}]`);
+            const replyText = result.message?.content || result.response || "No response text";
+            return ok(`🤖 ${replyText}\n\n[Conversazione: ${result.conversationId}]`);
         } catch (e) { return err(e); }
     }
 );
@@ -1016,9 +1047,11 @@ server.tool(
     'Configura uno strumento esterno per un agente',
     {
         agentId: z.string().describe('ID dell\'agente'),
-        type: z.enum(['calendar', 'email', 'crm', 'custom_api', 'database']).describe('Tipo strumento'),
+        type: z.enum(['calendar', 'email', 'crm', 'custom_api', 'database', 'http', 'custom']).describe('Tipo strumento'),
         name: z.string().describe('Nome strumento'),
+        description: z.string().describe('Descrizione strumento'),
         config: z.record(z.any()).describe('Configurazione specifica'),
+        parameters: z.record(z.any()).describe('Schema parametri JSON'),
         enabled: z.boolean().optional().describe('Attivo (default: true)')
     },
     async ({ agentId, ...toolData }) => {
@@ -1032,6 +1065,21 @@ server.tool(
 // ======================
 // WIDGET TOOLS
 // ======================
+
+server.tool(
+    'delete_agent_tool',
+    'Rimuovi uno strumento esterno da un agente',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        toolId: z.string().describe('ID dello strumento da rimuovere')
+    },
+    async ({ agentId, toolId }) => {
+        try {
+            await api(`/api/agents/${agentId}/tools/${toolId}`, 'DELETE');
+            return ok(`✅ Strumento rimosso con successo`);
+        } catch (e) { return err(e); }
+    }
+);
 
 server.tool(
     'get_widget_config',
@@ -1061,6 +1109,162 @@ server.tool(
             const cleanData = Object.fromEntries(Object.entries(customization).filter(([_, v]) => v !== undefined));
             const { widget } = await api(`/api/agents/${agentId}/widget`, 'PATCH', { customization: cleanData });
             return ok(`✅ Widget aggiornato!\n\nEmbed Code: ${widget.embedCode}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// n8n WORKFLOW TOOLS
+// ======================
+
+const { n8nClient } = require('./lib/n8n-client');
+
+server.tool(
+    'list_n8n_workflows',
+    'Lista tutti i workflow n8n disponibili',
+    {
+        active: z.boolean().optional().describe('Filtra per workflow attivi/inattivi')
+    },
+    async ({ active }) => {
+        try {
+            const workflows = await n8nClient.listWorkflows({ active });
+            if (!workflows?.length) return ok('Nessun workflow n8n trovato');
+            const summary = workflows.map(w => `• ${w.name} (ID: ${w.id}) - ${w.active ? '✅ Attivo' : '⏸️ Inattivo'}`).join('\n');
+            return ok(`Workflow n8n:\n\n${summary}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'get_n8n_workflow',
+    'Ottieni dettagli di un workflow n8n',
+    { workflowId: z.string().describe('ID del workflow') },
+    async ({ workflowId }) => {
+        try {
+            const workflow = await n8nClient.getWorkflow(workflowId);
+            return ok(`Workflow: ${workflow.name}\n\nID: ${workflow.id}\nAttivo: ${workflow.active}\nNodi: ${workflow.nodes?.length || 0}\n\nDescrizione: ${workflow.settings?.description || 'N/A'}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'create_n8n_workflow',
+    'Crea un nuovo workflow n8n',
+    {
+        name: z.string().describe('Nome del workflow'),
+        nodes: z.array(z.any()).optional().describe('Array di nodi (formato n8n)'),
+        connections: z.record(z.any()).optional().describe('Connessioni tra nodi'),
+        settings: z.record(z.any()).optional().describe('Impostazioni workflow')
+    },
+    async ({ name, nodes, connections, settings }) => {
+        try {
+            const workflow = await n8nClient.createWorkflow({
+                name,
+                nodes: nodes || [],
+                connections: connections || {},
+                settings: settings || {}
+            });
+            return ok(`✅ Workflow n8n "${workflow.name}" creato!\n\nID: ${workflow.id}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'update_n8n_workflow',
+    'Modifica un workflow n8n esistente',
+    {
+        workflowId: z.string().describe('ID del workflow'),
+        name: z.string().optional().describe('Nuovo nome'),
+        nodes: z.array(z.any()).optional().describe('Nuovi nodi'),
+        connections: z.record(z.any()).optional().describe('Nuove connessioni'),
+        settings: z.record(z.any()).optional().describe('Nuove impostazioni')
+    },
+    async ({ workflowId, ...updates }) => {
+        try {
+            const cleanUpdates = Object.fromEntries(Object.entries(updates).filter(([_, v]) => v !== undefined));
+            const workflow = await n8nClient.updateWorkflow(workflowId, cleanUpdates);
+            return ok(`✅ Workflow n8n "${workflow.name}" aggiornato`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'delete_n8n_workflow',
+    'Elimina un workflow n8n',
+    { workflowId: z.string().describe('ID del workflow da eliminare') },
+    async ({ workflowId }) => {
+        try {
+            await n8nClient.deleteWorkflow(workflowId);
+            return ok('✅ Workflow n8n eliminato');
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'activate_n8n_workflow',
+    'Attiva un workflow n8n',
+    { workflowId: z.string().describe('ID del workflow da attivare') },
+    async ({ workflowId }) => {
+        try {
+            await n8nClient.activateWorkflow(workflowId);
+            return ok('✅ Workflow n8n attivato');
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'deactivate_n8n_workflow',
+    'Disattiva un workflow n8n',
+    { workflowId: z.string().describe('ID del workflow da disattivare') },
+    async ({ workflowId }) => {
+        try {
+            await n8nClient.deactivateWorkflow(workflowId);
+            return ok('✅ Workflow n8n disattivato');
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'execute_n8n_workflow',
+    'Esegui un workflow n8n',
+    {
+        workflowId: z.string().describe('ID del workflow da eseguire'),
+        data: z.record(z.any()).optional().describe('Dati di input per il workflow')
+    },
+    async ({ workflowId, data }) => {
+        try {
+            const result = await n8nClient.executeWorkflow(workflowId, data || {});
+            return ok(`✅ Workflow n8n eseguito!\n\nExecution ID: ${result.id || result.executionId}\nStatus: ${result.status || 'running'}\n\nOutput:\n${JSON.stringify(result.data || result, null, 2).substring(0, 500)}...`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'get_n8n_execution',
+    'Ottieni stato/risultato di un\'esecuzione n8n',
+    { executionId: z.string().describe('ID dell\'esecuzione') },
+    async ({ executionId }) => {
+        try {
+            const execution = await n8nClient.getExecution(executionId);
+            return ok(`Esecuzione n8n:\n\nID: ${execution.id}\nWorkflow: ${execution.workflowId}\nStatus: ${execution.status}\nInizio: ${execution.startedAt}\nFine: ${execution.stoppedAt || 'in corso'}\n\nDati output:\n${JSON.stringify(execution.data?.resultData?.lastNodeExecutionStack || {}, null, 2).substring(0, 500)}...`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'list_n8n_executions',
+    'Lista le esecuzioni recenti n8n',
+    {
+        workflowId: z.string().optional().describe('Filtra per workflow'),
+        limit: z.number().optional().describe('Numero di esecuzioni (default 10)'),
+        status: z.enum(['waiting', 'running', 'success', 'failed']).optional().describe('Filtra per stato')
+    },
+    async ({ workflowId, limit = 10, status }) => {
+        try {
+            const executions = await n8nClient.listExecutions({ workflowId, limit, status });
+            if (!executions?.length) return ok('Nessuna esecuzione trovata');
+            const summary = executions.map(e => `• ${e.id} - ${e.status} (${new Date(e.startedAt).toLocaleString('it-IT')})`).join('\n');
+            return ok(`Esecuzioni n8n recenti:\n\n${summary}`);
         } catch (e) { return err(e); }
     }
 );

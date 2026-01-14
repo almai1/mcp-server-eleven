@@ -2,7 +2,7 @@
 
 
 const API_KEY = 'vf_2b0639e36ec64fd4992683ee9a8297e1';
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'https://voiceforge.super-chatbot.com/api';
 
 async function testEndpoint(name, url, method = 'GET', body = null) {
     try {
@@ -39,7 +39,8 @@ async function testEndpoint(name, url, method = 'GET', body = null) {
 async function runTests() {
     console.log('Starting API Key Auth Verification...\n');
 
-    // 1. Test Agents List (to get an agent ID) - This was already working but good sanity check
+    // 0. DEBUG AUTH (New Endpoint)
+    await testEndpoint('Debug Auth', '/debug-auth', 'POST', { debug: true });
     const agentsData = await testEndpoint('List Agents', '/agents');
 
     if (!agentsData || !agentsData.agents || agentsData.agents.length === 0) {
@@ -93,6 +94,26 @@ async function runTests() {
         message: 'Hello' // Minimal body
     });
 
+    // 🔴 REPRODUCTION TESTS (POST)
+    console.log('\n--- Reproduction Tests ---');
+
+    // Tools POST
+    await testEndpoint('Create Tool (POST)', `/agents/${agentId}/tools`, 'POST', {
+        name: 'Test Tool ' + Date.now(),
+        description: 'Test Description',
+        type: 'custom_api',
+        config: { url: 'https://example.com' },
+        parameters: { type: 'object' },
+        enabled: true
+    });
+
+    // Calendar User POST
+    await testEndpoint('Add Calendar User (POST)', `/agents/${agentId}/calendar/users`, 'POST', {
+        name: 'Test User',
+        email: `test${Date.now()}@example.com`,
+        role: 'member'
+    });
+
     // Voices
     const voicesData = await testEndpoint('List Voices', '/voices');
     if (voicesData && voicesData.voices && voicesData.voices.length > 0) {
@@ -124,6 +145,18 @@ async function runTests() {
     if (integrationsData && integrationsData.integrations && integrationsData.integrations.length > 0) {
         const integrationId = integrationsData.integrations[0].id;
         await testEndpoint('Get Integration Details', `/integrations/${integrationId}`);
+    }
+
+    // 🔴 CLEANUP: Delete Test Tools to prevent blocking
+    console.log('\n--- Cleanup ---');
+    const toolsCleanup = await testEndpoint('List Tools (Cleanup)', `/agents/${agentId}/tools`);
+    if (toolsCleanup && toolsCleanup.tools) {
+        for (const tool of toolsCleanup.tools) {
+            if (tool.name.startsWith('Test Tool')) {
+                console.log(`Deleting cleanup target: ${tool.name} (${tool.id})...`);
+                await testEndpoint(`DELETE Tool ${tool.name}`, `/agents/${agentId}/tools/${tool.id}`, 'DELETE');
+            }
+        }
     }
 
     console.log('\nVerification Complete.');
