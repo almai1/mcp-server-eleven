@@ -1121,27 +1121,41 @@ const { n8nClient } = require('./lib/n8n-client');
 
 server.tool(
     'list_n8n_workflows',
-    'Lista tutti i workflow n8n disponibili',
+    'Lista tutti i workflow n8n disponibili per un agente',
     {
+        agentId: z.string().describe('ID dell\'agente (REQUIRED)'),
         active: z.boolean().optional().describe('Filtra per workflow attivi/inattivi')
     },
-    async ({ active }) => {
+    async ({ agentId, active }) => {
         try {
-            const workflows = await n8nClient.listWorkflows({ active });
-            if (!workflows?.length) return ok('Nessun workflow n8n trovato');
+            const workflows = await n8nClient.listWorkflows({
+                active,
+                tags: [`agent:${agentId}`]
+            });
+            if (!workflows?.length) return ok('Nessun workflow n8n trovato per questo agente');
             const summary = workflows.map(w => `• ${w.name} (ID: ${w.id}) - ${w.active ? '✅ Attivo' : '⏸️ Inattivo'}`).join('\n');
-            return ok(`Workflow n8n:\n\n${summary}`);
+            return ok(`Workflow n8n (Agent: ${agentId}):\n\n${summary}`);
         } catch (e) { return err(e); }
     }
 );
 
 server.tool(
     'get_n8n_workflow',
-    'Ottieni dettagli di un workflow n8n',
-    { workflowId: z.string().describe('ID del workflow') },
-    async ({ workflowId }) => {
+    'Ottieni dettagli di un workflow n8n se appartiene all\'agente',
+    {
+        workflowId: z.string().describe('ID del workflow'),
+        agentId: z.string().describe('ID dell\'agente (REQUIRED)')
+    },
+    async ({ workflowId, agentId }) => {
         try {
             const workflow = await n8nClient.getWorkflow(workflowId);
+
+            // Verify tag ownership
+            const hasTag = workflow.tags?.some(t => t.name === `agent:${agentId}`);
+            if (!hasTag) {
+                return err(`Access Denied: Workflow ${workflowId} does not belong to agent ${agentId}`);
+            }
+
             return ok(`Workflow: ${workflow.name}\n\nID: ${workflow.id}\nAttivo: ${workflow.active}\nNodi: ${workflow.nodes?.length || 0}\n\nDescrizione: ${workflow.settings?.description || 'N/A'}`);
         } catch (e) { return err(e); }
     }
@@ -1149,22 +1163,24 @@ server.tool(
 
 server.tool(
     'create_n8n_workflow',
-    'Crea un nuovo workflow n8n',
+    'Crea un nuovo workflow n8n per un agente',
     {
+        agentId: z.string().describe('ID dell\'agente (REQUIRED)'),
         name: z.string().describe('Nome del workflow'),
         nodes: z.array(z.any()).optional().describe('Array di nodi (formato n8n)'),
         connections: z.record(z.any()).optional().describe('Connessioni tra nodi'),
         settings: z.record(z.any()).optional().describe('Impostazioni workflow')
     },
-    async ({ name, nodes, connections, settings }) => {
+    async ({ agentId, name, nodes, connections, settings }) => {
         try {
             const workflow = await n8nClient.createWorkflow({
                 name,
                 nodes: nodes || [],
                 connections: connections || {},
-                settings: settings || {}
+                settings: settings || {},
+                tags: [`agent:${agentId}`] // Auto-tagging
             });
-            return ok(`✅ Workflow n8n "${workflow.name}" creato!\n\nID: ${workflow.id}`);
+            return ok(`✅ Workflow n8n "${workflow.name}" creato per agente ${agentId}!\n\nID: ${workflow.id}`);
         } catch (e) { return err(e); }
     }
 );
@@ -1203,9 +1219,17 @@ server.tool(
 server.tool(
     'activate_n8n_workflow',
     'Attiva un workflow n8n',
-    { workflowId: z.string().describe('ID del workflow da attivare') },
-    async ({ workflowId }) => {
+    {
+        workflowId: z.string().describe('ID del workflow da attivare'),
+        agentId: z.string().describe('ID dell\'agente (REQUIRED)')
+    },
+    async ({ workflowId, agentId }) => {
         try {
+            // Verify ownership first
+            const workflow = await n8nClient.getWorkflow(workflowId);
+            const hasTag = workflow.tags?.some(t => t.name === `agent:${agentId}`);
+            if (!hasTag) return err(`Access Denied: Workflow does not belong to agent ${agentId}`);
+
             await n8nClient.activateWorkflow(workflowId);
             return ok('✅ Workflow n8n attivato');
         } catch (e) { return err(e); }
@@ -1215,9 +1239,17 @@ server.tool(
 server.tool(
     'deactivate_n8n_workflow',
     'Disattiva un workflow n8n',
-    { workflowId: z.string().describe('ID del workflow da disattivare') },
-    async ({ workflowId }) => {
+    {
+        workflowId: z.string().describe('ID del workflow da disattivare'),
+        agentId: z.string().describe('ID dell\'agente (REQUIRED)')
+    },
+    async ({ workflowId, agentId }) => {
         try {
+            // Verify ownership
+            const workflow = await n8nClient.getWorkflow(workflowId);
+            const hasTag = workflow.tags?.some(t => t.name === `agent:${agentId}`);
+            if (!hasTag) return err(`Access Denied: Workflow does not belong to agent ${agentId}`);
+
             await n8nClient.deactivateWorkflow(workflowId);
             return ok('✅ Workflow n8n disattivato');
         } catch (e) { return err(e); }
@@ -1229,10 +1261,16 @@ server.tool(
     'Esegui un workflow n8n',
     {
         workflowId: z.string().describe('ID del workflow da eseguire'),
+        agentId: z.string().describe('ID dell\'agente (REQUIRED)'),
         data: z.record(z.any()).optional().describe('Dati di input per il workflow')
     },
-    async ({ workflowId, data }) => {
+    async ({ workflowId, agentId, data }) => {
         try {
+            // Verify ownership
+            const workflow = await n8nClient.getWorkflow(workflowId);
+            const hasTag = workflow.tags?.some(t => t.name === `agent:${agentId}`);
+            if (!hasTag) return err(`Access Denied: Workflow does not belong to agent ${agentId}`);
+
             const result = await n8nClient.executeWorkflow(workflowId, data || {});
             return ok(`✅ Workflow n8n eseguito!\n\nExecution ID: ${result.id || result.executionId}\nStatus: ${result.status || 'running'}\n\nOutput:\n${JSON.stringify(result.data || result, null, 2).substring(0, 500)}...`);
         } catch (e) { return err(e); }
