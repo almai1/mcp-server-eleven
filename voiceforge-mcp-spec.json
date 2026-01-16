@@ -1,0 +1,673 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "VoiceForge AI MCP API",
+        "version": "1.2.0",
+        "description": "Model Context Protocol (MCP) server for VoiceForge AI platform. Allows AI coding assistants to create and manage conversational AI agents, knowledge bases, workflows, and calendars.",
+        "contact": {
+            "url": "https://voiceforge.super-chatbot.com"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://voiceforge.super-chatbot.com",
+            "description": "Production"
+        },
+        {
+            "url": "http://localhost:3000",
+            "description": "Development"
+        }
+    ],
+    "security": [
+        {
+            "apiKey": []
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "apiKey": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "API key from VoiceForge dashboard (/api-keys)"
+            }
+        }
+    },
+    "x-mcp-config": {
+        "serverName": "voiceforge-ai",
+        "version": "1.2.0",
+        "transports": {
+            "stdio": {
+                "description": "Primary transport for Cursor/VS Code integration",
+                "command": "npx tsx src/mcp/server.ts",
+                "env": {
+                    "VOICEFORGE_API_KEY": "<your-api-key>"
+                }
+            },
+            "http": {
+                "endpoint": "POST /api/mcp",
+                "headers": {
+                    "Authorization": "Bearer <api-key>"
+                }
+            }
+        },
+        "cursorConfig": {
+            "mcpServers": {
+                "voiceforge": {
+                    "command": "npx",
+                    "args": [
+                        "tsx",
+                        "src/mcp/server.ts"
+                    ],
+                    "env": {
+                        "VOICEFORGE_API_KEY": "<YOUR_API_KEY>"
+                    }
+                }
+            }
+        }
+    },
+    "x-mcp-tools": {
+        "agent_management": {
+            "description": "Create, update, delete and list AI agents",
+            "tools": [
+                {
+                    "name": "list_agents",
+                    "description": "List all AI agents for the authenticated user with usage statistics",
+                    "parameters": {},
+                    "returns": {
+                        "agents": "Array of agent objects with id, name, description, stats",
+                        "count": "Total number of agents"
+                    }
+                },
+                {
+                    "name": "get_agent",
+                    "description": "Get detailed configuration for a specific agent",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true,
+                            "description": "ID of the agent"
+                        }
+                    }
+                },
+                {
+                    "name": "create_agent",
+                    "description": "Create a new AI agent with personality and configuration",
+                    "parameters": {
+                        "name": {
+                            "type": "string",
+                            "required": true,
+                            "description": "Agent name"
+                        },
+                        "systemPrompt": {
+                            "type": "string",
+                            "required": true,
+                            "description": "System prompt defining personality and behavior"
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Agent description"
+                        },
+                        "firstMessage": {
+                            "type": "string",
+                            "description": "Initial welcome message"
+                        },
+                        "language": {
+                            "type": "string",
+                            "default": "it-IT",
+                            "description": "Language code (it-IT, en-US, etc.)"
+                        },
+                        "llmProvider": {
+                            "type": "string",
+                            "default": "openai",
+                            "enum": [
+                                "openai",
+                                "openrouter"
+                            ],
+                            "description": "LLM provider"
+                        },
+                        "llmModel": {
+                            "type": "string",
+                            "default": "gpt-4o-mini",
+                            "description": "LLM model name"
+                        },
+                        "voiceProvider": {
+                            "type": "string",
+                            "default": "openai",
+                            "enum": [
+                                "openai",
+                                "elevenlabs",
+                                "google"
+                            ]
+                        },
+                        "voiceModel": {
+                            "type": "string",
+                            "default": "alloy",
+                            "description": "Voice model ID"
+                        },
+                        "temperature": {
+                            "type": "number",
+                            "default": 0.7,
+                            "min": 0,
+                            "max": 2
+                        },
+                        "maxTokens": {
+                            "type": "number",
+                            "default": 500,
+                            "min": 1,
+                            "max": 8000
+                        },
+                        "enableTTS": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "isPublic": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "example": {
+                        "name": "Assistente Immobiliare",
+                        "systemPrompt": "Sei un assistente virtuale per un'agenzia immobiliare. Aiuti i clienti a trovare proprietà, fornisci informazioni su appartamenti e case in vendita o affitto, e puoi prenotare appuntamenti per visite.",
+                        "firstMessage": "Benvenuto! Sono l'assistente virtuale dell'agenzia. Come posso aiutarti oggi? Cerchi una casa in vendita o in affitto?",
+                        "language": "it-IT",
+                        "llmModel": "gpt-4o-mini"
+                    }
+                },
+                {
+                    "name": "update_agent",
+                    "description": "Modify an existing agent's configuration",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "systemPrompt": {
+                            "type": "string"
+                        },
+                        "description": {
+                            "type": "string"
+                        },
+                        "firstMessage": {
+                            "type": "string"
+                        },
+                        "temperature": {
+                            "type": "number"
+                        }
+                    }
+                },
+                {
+                    "name": "delete_agent",
+                    "description": "Delete an agent and all its data permanently",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                }
+            ]
+        },
+        "knowledge_base": {
+            "description": "Manage RAG knowledge documents for agents",
+            "tools": [
+                {
+                    "name": "list_knowledge",
+                    "description": "List all documents in an agent's knowledge base",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                },
+                {
+                    "name": "add_knowledge_text",
+                    "description": "Add a text document to the agent's knowledge base for RAG",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "required": true,
+                            "description": "Document name"
+                        },
+                        "content": {
+                            "type": "string",
+                            "required": true,
+                            "description": "Text content"
+                        },
+                        "description": {
+                            "type": "string"
+                        }
+                    },
+                    "example": {
+                        "agentId": "agent-id",
+                        "name": "Listino Prezzi 2024",
+                        "content": "APPARTAMENTI IN VENDITA:\n- Bilocale Centro: €180,000\n- Trilocale Semicentro: €250,000\n- Quadrilocale Periferia: €320,000\n\nAFFITTI:\n- Monolocale: €600/mese\n- Bilocale: €800/mese",
+                        "description": "Prezzi appartamenti"
+                    }
+                },
+                {
+                    "name": "add_knowledge_url",
+                    "description": "Download and add content from a URL to knowledge base",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "url": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "description": {
+                            "type": "string"
+                        }
+                    }
+                },
+                {
+                    "name": "delete_knowledge",
+                    "description": "Delete a document from knowledge base",
+                    "parameters": {
+                        "knowledgeBaseId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                },
+                {
+                    "name": "search_knowledge",
+                    "description": "Semantic search across agent's knowledge base",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "query": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "limit": {
+                            "type": "number",
+                            "default": 5,
+                            "max": 20
+                        }
+                    }
+                }
+            ]
+        },
+        "workflows": {
+            "description": "VoiceForge Hybrid Workflow System - AI assistants should understand TWO workflow options and recommend the appropriate one based on complexity",
+            "x-workflow-strategy": {
+                "overview": "VoiceForge offers TWO complementary workflow solutions. AI assistants MUST recommend the right tool based on user needs.",
+                "internal_builder": {
+                    "name": "Internal Visual Workflow Builder",
+                    "description": "Built-in ReactFlow-based builder for simple conversational logic",
+                    "cost": "FREE (included)",
+                    "use_cases": [
+                        "Conversational flows (welcome messages, FAQs)",
+                        "IF/THEN conditional logic",
+                        "Data collection from users",
+                        "Simple API calls to user's own endpoints",
+                        "Agent personality flows",
+                        "Appointment booking (basic)"
+                    ],
+                    "target_users": "90% of users - non-technical, conversational agents",
+                    "access": "Use MCP workflow tools (create_workflow, list_workflows, etc.)",
+                    "node_types": "start, end, message, aiResponse, collectInput, condition, apiCall, handoff, setVariable",
+                    "recommendation": "DEFAULT choice for conversational agents. Always suggest this first unless user explicitly needs complex integrations."
+                },
+                "n8n_integration": {
+                    "name": "n8n Advanced Automation Platform",
+                    "description": "Enterprise-grade workflow automation with 400+ app integrations",
+                    "cost": "FREE (Community Edition self-hosted)",
+                    "use_cases": [
+                        "CRM integrations (Salesforce, HubSpot, Pipedrive)",
+                        "Marketing automation (Mailchimp, SendGrid)",
+                        "Database operations (PostgreSQL, MySQL, MongoDB)",
+                        "E-commerce (Shopify, WooCommerce)",
+                        "Cloud storage (Google Drive, Dropbox, S3)",
+                        "Multi-step complex automations (5+ steps)",
+                        "Custom webhooks and HTTP requests",
+                        "Data transformations and ETL"
+                    ],
+                    "target_users": "10% of users - power users, developers, enterprise needs",
+                    "access": "User navigates to Agent Edit page → 'Workflow n8n' button → Opens n8n in new tab with SSO email pre-fill",
+                    "note": "AI assistants CANNOT create n8n workflows via MCP. Only guide users to access n8n manually.",
+                    "recommendation": "Suggest ONLY when user explicitly needs CRM/400+ app integrations or complex multi-step automations."
+                },
+                "decision_tree": {
+                    "question_1": "Does the user need to integrate with external apps (Salesforce, HubSpot, Google Sheets, etc.)?",
+                    "if_no": "→ Use Internal Builder (MCP workflow tools)",
+                    "if_yes": {
+                        "question_2": "Is it a simple 1-2 step integration or complex multi-step automation?",
+                        "if_simple": "→ Use Internal Builder with apiCall node",
+                        "if_complex": "→ Recommend n8n (guide user to 'Workflow n8n' button)"
+                    }
+                },
+                "ai_assistant_guidelines": {
+                    "default_recommendation": "ALWAYS recommend Internal Builder first for conversational agents",
+                    "when_to_mention_n8n": [
+                        "User explicitly asks about CRM integration",
+                        "User needs 400+ third-party app connections",
+                        "User describes complex multi-step automations",
+                        "User mentions enterprise compliance needs"
+                    ],
+                    "how_to_guide_n8n": "Tell user: 'For advanced integrations, go to Agent Edit page → Click 'Workflow n8n' button → You'll access n8n with 400+ integrations (Salesforce, HubSpot, etc.)'",
+                    "important_note": "MCP tools (create_workflow, etc.) manage ONLY Internal Builder workflows. For n8n, guide user to UI - you cannot create n8n workflows programmatically via MCP."
+                }
+            },
+            "tools": [
+                {
+                    "name": "list_workflows",
+                    "description": "List all workflows for an agent",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                },
+                {
+                    "name": "get_workflow",
+                    "description": "Get detailed workflow with nodes and edges",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "workflowId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                },
+                {
+                    "name": "create_workflow",
+                    "description": "Create a new workflow with nodes and edges",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "description": {
+                            "type": "string"
+                        },
+                        "nodes": {
+                            "type": "array",
+                            "description": "Array of node objects",
+                            "items": {
+                                "id": "string",
+                                "type": "start|end|message|aiResponse|collectInput|condition|apiCall|handoff|setVariable",
+                                "position": {
+                                    "x": "number",
+                                    "y": "number"
+                                },
+                                "data": "object"
+                            }
+                        },
+                        "edges": {
+                            "type": "array",
+                            "items": {
+                                "id": "string",
+                                "source": "string",
+                                "target": "string",
+                                "sourceHandle": "string (optional, for conditions: 'true'|'false')",
+                                "label": "string"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "create_workflow_from_description",
+                    "description": "Generate a complete workflow from natural language description",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "description": {
+                            "type": "string",
+                            "required": true,
+                            "description": "Natural language description of the workflow"
+                        }
+                    },
+                    "example": {
+                        "agentId": "agent-id",
+                        "name": "Flusso Appuntamenti",
+                        "description": "Saluta l'utente, chiedi il nome, chiedi se vuole prenotare un appuntamento, se sì raccogli data e ora preferite e conferma la prenotazione"
+                    }
+                },
+                {
+                    "name": "update_workflow",
+                    "description": "Update workflow nodes, edges, or metadata",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "workflowId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "nodes": {
+                            "type": "array"
+                        },
+                        "edges": {
+                            "type": "array"
+                        },
+                        "isActive": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                {
+                    "name": "delete_workflow",
+                    "description": "Delete a workflow",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "workflowId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                }
+            ]
+        },
+        "conversations": {
+            "description": "Chat with agents and manage conversation history",
+            "tools": [
+                {
+                    "name": "chat",
+                    "description": "Send a message to an agent and get a response",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "message": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "conversationId": {
+                            "type": "string",
+                            "description": "Optional, to continue existing conversation"
+                        }
+                    }
+                },
+                {
+                    "name": "list_conversations",
+                    "description": "List conversations for an agent",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "limit": {
+                            "type": "number",
+                            "default": 10,
+                            "max": 50
+                        }
+                    }
+                },
+                {
+                    "name": "get_conversation",
+                    "description": "Get full conversation with messages",
+                    "parameters": {
+                        "conversationId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                }
+            ]
+        },
+        "calendar": {
+            "description": "Manage appointments and team availability",
+            "tools": [
+                {
+                    "name": "list_calendar_events",
+                    "description": "List appointments with date filtering",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "startDate": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "endDate": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                },
+                {
+                    "name": "create_calendar_event",
+                    "description": "Book a new appointment",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "title": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "startTime": {
+                            "type": "string",
+                            "format": "date-time",
+                            "required": true
+                        },
+                        "endTime": {
+                            "type": "string",
+                            "format": "date-time",
+                            "required": true
+                        },
+                        "clientName": {
+                            "type": "string"
+                        },
+                        "clientEmail": {
+                            "type": "string"
+                        },
+                        "notes": {
+                            "type": "string"
+                        }
+                    }
+                },
+                {
+                    "name": "check_calendar_availability",
+                    "description": "Check available slots for a date",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        },
+                        "date": {
+                            "type": "string",
+                            "format": "date",
+                            "required": true
+                        }
+                    }
+                },
+                {
+                    "name": "find_next_available_slot",
+                    "description": "Find the next available booking time",
+                    "parameters": {
+                        "agentId": {
+                            "type": "string",
+                            "required": true
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "x-usage-examples": {
+        "real_estate_agent": {
+            "title": "Create a Real Estate Agency Agent",
+            "steps": [
+                {
+                    "step": 1,
+                    "tool": "create_agent",
+                    "description": "Create the agent with real estate personality",
+                    "params": {
+                        "name": "Assistente ImmobiliareCasa",
+                        "systemPrompt": "Sei l'assistente virtuale dell'agenzia ImmobiliareCasa. Il tuo ruolo è:\n1. Aiutare i clienti a trovare l'immobile ideale\n2. Fornire informazioni su appartamenti e case disponibili\n3. Prenotare visite agli immobili\n4. Rispondere a domande su prezzi, zone, e caratteristiche\n\nSei professionale ma cordiale. Usa sempre il 'Lei' con i clienti.",
+                        "firstMessage": "Buongiorno e benvenuto in ImmobiliareCasa! Sono l'assistente virtuale dell'agenzia. Cerca un immobile in vendita o in affitto?",
+                        "language": "it-IT"
+                    }
+                },
+                {
+                    "step": 2,
+                    "tool": "add_knowledge_text",
+                    "description": "Add property listings to knowledge base",
+                    "params": {
+                        "name": "Listino Immobili Gennaio 2024",
+                        "content": "IMMOBILI IN VENDITA:\n\n1. TRILOCALE CENTRO STORICO\n   - 85 mq, 2 camere, soggiorno, cucina abitabile\n   - 3° piano con ascensore, terrazzo\n   - Prezzo: €285,000\n   - Rif: CS-001\n\n2. BILOCALE ZONA STAZIONE\n   - 55 mq, 1 camera, soggiorno con angolo cottura\n   - 2° piano, ristrutturato 2023\n   - Prezzo: €165,000\n   - Rif: ZS-002\n\nAFFITTI:\n\n1. MONOLOCALE STUDENTI\n   - 35 mq, zona universitaria\n   - €550/mese + spese\n   - Rif: UN-101"
+                    }
+                },
+                {
+                    "step": 3,
+                    "tool": "create_workflow_from_description",
+                    "description": "Create appointment booking workflow",
+                    "params": {
+                        "name": "Prenotazione Visita",
+                        "description": "Saluta il cliente, chiedi quale immobile vuole visitare (chiedi il codice riferimento), chiedi il nome e il telefono, chiedi data e ora preferite per la visita, conferma l'appuntamento"
+                    }
+                },
+                {
+                    "step": 4,
+                    "tool": "chat",
+                    "description": "Test the agent",
+                    "params": {
+                        "message": "Buongiorno, cerco un trilocale in centro"
+                    }
+                }
+            ]
+        }
+    }
+}
