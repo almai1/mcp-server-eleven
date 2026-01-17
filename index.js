@@ -13,7 +13,7 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const { z } = require('zod');
 
 // Configuration
-const API_KEY = process.env.VOICEFORGE_API_KEY;
+const API_KEY = "process.env.VOICEFORGE_API_KEY"; // process.env.VOICEFORGE_API_KEY;
 const BASE_URL = process.env.VOICEFORGE_URL || 'https://voiceforge.super-chatbot.com';
 const VERSION = '2.0.0';
 
@@ -1163,12 +1163,24 @@ server.tool(
 
 server.tool(
     'create_n8n_workflow',
-    'Crea un nuovo workflow n8n per un agente',
+    `Crea un nuovo workflow n8n per un agente.
+
+IMPORTANTE: Usa la struttura JSON esatta per i nodi o avrai errore "Could not find property option".
+
+FORMATO NODI CORRETTO:
+- webhook: {parameters:{httpMethod:"POST",path:"path-name",responseMode:"responseNode"}, type:"n8n-nodes-base.webhook", typeVersion:2}
+- if: {parameters:{conditions:{options:{caseSensitive:true,leftValue:"",typeValidation:"strict"},conditions:[{id:"cond-1",leftValue:"={{ $json.field }}",rightValue:"value",operator:{type:"string",operation:"equals"}}],combinator:"and"},options:{}}, type:"n8n-nodes-base.if", typeVersion:2}
+- httpRequest: {parameters:{method:"POST",url:"https://api.example.com",sendBody:true,specifyBody:"json",jsonBody:"={{ JSON.stringify($json) }}"}, type:"n8n-nodes-base.httpRequest", typeVersion:4.2}
+- set: {parameters:{assignments:{assignments:[{id:"field-1",name:"fieldName",value:"value",type:"string"}]},options:{}}, type:"n8n-nodes-base.set", typeVersion:3.4}
+- merge: {parameters:{mode:"chooseBranch",output:"empty"}, type:"n8n-nodes-base.merge", typeVersion:3}
+- respondToWebhook: {parameters:{options:{}}, type:"n8n-nodes-base.respondToWebhook", typeVersion:1.1}
+
+CONNESSIONI: Usa nomi nodi, NON id. Formato: {"NodeName":{"main":[[{"node":"TargetName","type":"main","index":0}]]}}`,
     {
         agentId: z.string().describe('ID dell\'agente (REQUIRED)'),
         name: z.string().describe('Nome del workflow'),
-        nodes: z.array(z.any()).optional().describe('Array di nodi (formato n8n)'),
-        connections: z.record(z.any()).optional().describe('Connessioni tra nodi'),
+        nodes: z.array(z.any()).optional().describe('Array di nodi (vedi formato sopra)'),
+        connections: z.record(z.any()).optional().describe('Connessioni tra nodi (usa NOMI non ID)'),
         settings: z.record(z.any()).optional().describe('Impostazioni workflow')
     },
     async ({ agentId, name, nodes, connections, settings }) => {
@@ -1184,6 +1196,7 @@ server.tool(
         } catch (e) { return err(e); }
     }
 );
+
 
 server.tool(
     'update_n8n_workflow',
