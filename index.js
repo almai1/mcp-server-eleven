@@ -13,7 +13,7 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const { z } = require('zod');
 
 // Configuration
-const API_KEY = "process.env.VOICEFORGE_API_KEY"; // process.env.VOICEFORGE_API_KEY;
+const API_KEY = process.env.VOICEFORGE_API_KEY;
 const BASE_URL = process.env.VOICEFORGE_URL || 'https://voiceforge.super-chatbot.com';
 const VERSION = '2.0.0';
 
