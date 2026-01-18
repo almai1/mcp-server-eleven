@@ -127,15 +127,15 @@ server.tool(
 
 server.tool(
     'create_agent',
-    'Crea un nuovo agente AI con personalità specifica',
+    'Crea un nuovo agente AI. IMPORTANTE: Prima di chiamare questo strumento, chiedi all\'utente il nome dell\'agente e il tipo di personalità/ruolo che deve avere. I parametri name e systemPrompt sono OBBLIGATORI.',
     {
-        name: z.string().describe('Nome dell\'agente'),
-        systemPrompt: z.string().describe('Prompt di sistema che definisce comportamento e personalità'),
-        description: z.string().optional().describe('Descrizione breve'),
-        firstMessage: z.string().optional().describe('Messaggio iniziale'),
-        language: z.string().optional().describe('Lingua (default: it-IT)'),
-        llmModel: z.string().optional().describe('Modello LLM (default: gpt-4o-mini)'),
-        temperature: z.number().optional().describe('Temperatura 0-1 (default: 0.7)')
+        name: z.string().describe('Nome dell\'agente (OBBLIGATORIO) - Es: "Assistente Vendite", "Support Bot"'),
+        systemPrompt: z.string().describe('Prompt di sistema (OBBLIGATORIO) - Definisce comportamento, tono e competenze. Deve essere dettagliato: chi è, cosa fa, come risponde, quali strumenti usa.'),
+        description: z.string().optional().describe('Descrizione breve visibile nella dashboard'),
+        firstMessage: z.string().optional().describe('Messaggio di benvenuto che l\'agente invia all\'inizio della chat'),
+        language: z.string().optional().describe('Lingua (default: it-IT). Esempi: it-IT, en-US, es-ES'),
+        llmModel: z.string().optional().describe('Modello LLM (default: gpt-4o-mini). Opzioni: gpt-4o, gpt-4o-mini, claude-3'),
+        temperature: z.number().optional().describe('Creatività 0-1 (default: 0.7). Più basso = più preciso, più alto = più creativo')
     },
     async (args) => {
         try {
