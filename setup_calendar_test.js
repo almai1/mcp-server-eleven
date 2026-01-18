@@ -1,6 +1,10 @@
 const https = require('https');
 
-const API_KEY = 'vf_9b7964049c1b464ca3bcde1684e70d0e'; // Key provided by user
+const API_KEY = process.env.VOICEFORGE_API_KEY;
+if (!API_KEY) {
+    console.error('❌ ERRORE: VOICEFORGE_API_KEY è richiesta.');
+    process.exit(1);
+}
 const AGENT_ID = 'cmkctvzgg000jwesuhst7scya';
 const HOST = 'voiceforge.super-chatbot.com';
 
