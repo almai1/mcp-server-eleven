@@ -24,7 +24,7 @@
         "url": "https://github.com/almai1/mcp-server-eleven.git"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.0.0",
+        "@modelcontextprotocol/sdk": "^1.0.4",
         "zod": "^3.22.0"
     },
     "engines": {
