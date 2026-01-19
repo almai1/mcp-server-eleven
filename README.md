@@ -137,54 +137,6 @@ npm install
 
 ---
 
-## 📦 Primitive MCP
-
-### Resources
-
-Le **Resources** forniscono contesto al modello AI prima di eseguire i tool.
-
-| URI | Descrizione |
-|-----|-------------|
-| `agents://list` | Lista tutti gli agenti |
-| `agents://{id}` | Dettagli di un agente specifico |
-| `knowledge://{agentId}` | Knowledge base di un agente |
-| `workflows://{agentId}` | Workflow di un agente |
-| `calendar://{agentId}` | Eventi calendario di un agente |
-| `analytics://overview` | Statistiche globali |
-| `docs://api` | Documentazione API VoiceForge |
-| `docs://agents` | Guida creazione agenti |
-| `docs://workflows` | Guida workflow n8n |
-
-**Uso in Cursor/Antigravity:**
-
-```
-> Leggi la documentazione API (docs://api)
-> Mostrami la lista degli agenti (agents://list)
-> Dammi dettagli sull'agente cmkk2n4... (agents://cmkk2n4gb0005olhpu9b1mf54)
-```
-
-### Prompts
-
-I **Prompts** sono template riutilizzabili per operazioni comuni.
-
-| Nome | Descrizione | Parametri |
-|------|-------------|----------|
-| `create_customer_service_agent` | Crea agente customer service | companyName, industry, language |
-| `create_appointment_agent` | Crea agente prenotazioni | businessName, serviceType, workingHours |
-| `create_faq_agent` | Crea agente FAQ con KB | topic, faqUrl |
-| `create_sales_agent` | Crea agente vendite | productName, targetAudience, pricingInfo |
-| `create_school_agent` | Crea agente scolastico | teacherName, subject |
-
-**Uso in Cursor/Antigravity:**
-
-```
-> Usa il prompt create_customer_service_agent per PizzaExpress nel settore food
-> Crea un agente prenotazioni per il Salone BeautyStyle (parrucchiere)
-> Usa create_school_agent per Prof. Nicoletti (Matematica)
-```
-
----
-
 ## 🛠️ Tools Disponibili (50+)
 
 ### 👤 Agenti
