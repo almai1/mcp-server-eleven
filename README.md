@@ -137,6 +137,44 @@ npm install
 
 ---
 
+## 📦 Primitive MCP
+
+### Resources
+
+Le **Resources** forniscono contesto documentale al modello AI.
+
+| URI | Descrizione |
+|-----|-------------|
+| `agents://list` | Lista di tutti gli agenti dell'utente |
+| `docs://api` | Documentazione API VoiceForge |
+| `docs://agents` | Guida alla creazione di agenti complessi |
+
+**Esempio d'uso in Antigravity/Cursor:**
+
+```
+> Leggi la documentazione API (usa resource docs://api)
+> Mostrami la lista degli agenti (usa resource agents://list)
+```
+
+### Prompts
+
+I **Prompts** sono template riutilizzabili per creare agenti.
+
+| Nome | Descrizione | Parametri |
+|------|-------------|-----------|
+| `create-customer-service-agent` | Crea agente customer service | companyName, industry, language |
+| `create-appointment-agent` | Crea agente prenotazioni | businessName, serviceType, workingHours |
+| `create-school-agent` | Crea agente scolastico | teacherName, subject |
+
+**Esempio d'uso in Antigravity/Cursor:**
+
+```
+> Usa il prompt create-customer-service-agent per PizzaExpress nel settore food
+> Crea un agente scolastico con create-school-agent per Prof. Rossi (Matematica)
+```
+
+---
+
 ## 🛠️ Tools Disponibili (50+)
 
 ### 👤 Agenti

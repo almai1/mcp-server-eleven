@@ -1321,6 +1321,236 @@ server.tool(
 );
 
 // ======================
+// RESOURCES
+// ======================
+
+// Resource: agents://list
+server.registerResource(
+    'agents-list',
+    'agents://list',
+    {
+        title: 'Lista Agenti',
+        description: 'Lista di tutti gli agenti VoiceForge dell\'utente',
+        mimeType: 'application/json'
+    },
+    async () => {
+        const { agents } = await api('/api/agents');
+        return {
+            contents: [{
+                uri: 'agents://list',
+                mimeType: 'application/json',
+                text: JSON.stringify(agents, null, 2)
+            }]
+        };
+    }
+);
+
+// Resource: docs://api  
+server.registerResource(
+    'docs-api',
+    'docs://api',
+    {
+        title: 'Documentazione API',
+        description: 'Documentazione completa delle API VoiceForge',
+        mimeType: 'text/markdown'
+    },
+    async () => {
+        const apiDocs = `# VoiceForge API Documentation
+
+## Agenti
+
+### POST /api/agents
+Crea un nuovo agente AI.
+
+**Parametri:**
+- \`name\`: Nome dell'agente (richiesto)
+- \`systemPrompt\`: Prompt di sistema (richiesto)
+- \`description\`: Descrizione breve
+- \`firstMessage\`: Messaggio iniziale
+- \`language\`: Lingua (default: it-IT)
+- \`llmModel\`: Modello LLM (default: gpt-4o-mini)
+- \`temperature\`: Temperatura 0-1 (default: 0.7)
+
+### GET /api/agents
+Lista tutti gli agenti dell'utente.
+
+### GET /api/agents/{id}
+Ottieni dettagli di un agente.
+
+### PATCH /api/agents/{id}
+Modifica un agente esistente.
+
+### DELETE /api/agents/{id}
+Elimina un agente.
+
+## Knowledge Base
+
+### POST /api/agents/{id}/knowledge
+Aggiungi contenuto alla knowledge base.
+
+**Parametri:**
+- \`name\`: Nome del documento
+- \`content\`: Contenuto testuale (per tipo text)
+- \`url\`: URL da cui estrarre contenuto (per tipo url)
+`;
+        return {
+            contents: [{
+                uri: 'docs://api',
+                mimeType: 'text/markdown',
+                text: apiDocs
+            }]
+        };
+    }
+);
+
+// Resource: docs://agents
+server.registerResource(
+    'docs-agents',
+    'docs://agents',
+    {
+        title: 'Guida Agenti',
+        description: 'Guida alla creazione di agenti complessi',
+        mimeType: 'text/markdown'
+    },
+    async () => {
+        const agentGuide = `# Guida alla Creazione di Agenti VoiceForge
+
+## Anatomia di un Agente
+
+1. **System Prompt**: Definisce personalità e comportamento
+2. **Knowledge Base**: Documenti e dati che l'agente conosce
+3. **Tools**: Strumenti esterni (calendario, CRM, webhook)
+4. **Workflow**: Flussi automatici per operazioni complesse
+
+## Best Practices
+
+- Sii specifico sul ruolo dell'agente
+- Definisci chiaramente le capacità
+- Elenca cosa NON può fare
+- Usa un tono appropriato al contesto
+`;
+        return {
+            contents: [{
+                uri: 'docs://agents',
+                mimeType: 'text/markdown',
+                text: agentGuide
+            }]
+        };
+    }
+);
+
+// ======================
+// PROMPTS
+// ======================
+
+// Prompt: Customer Service Agent
+server.registerPrompt(
+    'create-customer-service-agent',
+    {
+        title: 'Crea Agente Customer Service',
+        description: 'Template per creare un agente customer service professionale',
+        argsSchema: {
+            companyName: z.string().describe('Nome azienda'),
+            industry: z.string().describe('Settore (es: ecommerce, tech, travel)'),
+            language: z.string().optional().describe('Lingua (default: it-IT)')
+        }
+    },
+    async ({ companyName, industry, language = 'it-IT' }) => {
+        return {
+            messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Crea un agente customer service per ${companyName} nel settore ${industry}.
+
+Usa questi parametri:
+- name: "Assistente ${companyName}"
+- language: "${language}"
+- systemPrompt: "Sei l'assistente clienti di ${companyName}, azienda nel settore ${industry}. Fornisci supporto professionale ed empatico."
+- temperature: 0.7
+
+Prossimi passi:
+1. Aggiungi knowledge base con FAQ
+2. Configura workflow per escalation
+3. Imposta webhook per notifiche`
+                }
+            }]
+        };
+    }
+);
+
+// Prompt: Appointment Agent
+server.registerPrompt(
+    'create-appointment-agent',
+    {
+        title: 'Crea Agente Prenotazioni',
+        description: 'Template per creare un agente che gestisce prenotazioni',
+        argsSchema: {
+            businessName: z.string().describe('Nome attività'),
+            serviceType: z.string().describe('Tipo servizio (es: medico, parrucchiere)'),
+            workingHours: z.string().optional().describe('Orari di lavoro')
+        }
+    },
+    async ({ businessName, serviceType, workingHours = '9:00-18:00 Lun-Ven' }) => {
+        return {
+            messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Crea un agente prenotazioni per ${businessName} (${serviceType}).
+
+Parametri:
+- name: "Assistente Prenotazioni ${businessName}"
+- systemPrompt: "Gestisci prenotazioni per ${businessName}. Orari: ${workingHours}. Verifica disponibilità e crea appuntamenti."
+- tools: ["calendar"]
+- temperature: 0.6
+
+Setup:
+1. Configura slot disponibili
+2. Aggiungi utenti calendario
+3. Imposta reminder 24h prima`
+                }
+            }]
+        };
+    }
+);
+
+// Prompt: School Agent  
+server.registerPrompt(
+    'create-school-agent',
+    {
+        title: 'Crea Agente Scolastico',
+        description: 'Template per creare un agente che gestisce interrogazioni e calendario scolastico',
+        argsSchema: {
+            teacherName: z.string().describe('Nome insegnante'),
+            subject: z.string().describe('Materia insegnata')
+        }
+    },
+    async ({ teacherName, subject }) => {
+        return {
+            messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Crea un agente scolastico per il Prof. ${teacherName} (${subject}).
+
+Parametri:
+- name: "Assistente Scolastico - Prof. ${teacherName}"
+- systemPrompt: "Sei l'assistente del Professor ${teacherName} (${subject}). Gestisci il calendario delle interrogazioni. Chiedi SEMPRE conferma prima di creare eventi."
+- tools: ["calendar"]
+- temperature: 0.6
+
+Setup:
+1. Aggiungi studenti come calendar users
+2. Configura orari disponibili
+3. Imposta reminder automatici`
+                }
+            }]
+        };
+    }
+);
+
+// ======================
 // START SERVER
 // ======================
 
