@@ -33,29 +33,6 @@ Aggiungi a `~/.gemini/antigravity/mcp_config.json`:
 }
 ```
 
-**Con supporto n8n (opzionale):**
-
-```json
-{
-  "mcpServers": {
-    "voiceforge": {
-      "command": "npx",
-      "args": ["-y", "github:almai1/mcp-server-eleven"],
-      "env": {
-        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI",
-        "N8N_BASE_URL": "https://tuo-dominio.com/api/v1",
-        "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
-      }
-    }
-  }
-}
-```
-
-> ⚠️ **Importante per n8n**: 
-> - `N8N_BASE_URL` deve includere `/api/v1` (es. `https://n8n.example.com/api/v1`)
-> - Per istanze locali: `http://localhost:5678/api/v1`
-> - L'API key viene passata automaticamente nell'header `X-N8N-API-KEY`
-
 #### Cursor
 
 Aggiungi a `~/.cursor/mcp.json`:
@@ -74,17 +51,36 @@ Aggiungi a `~/.cursor/mcp.json`:
 }
 ```
 
-**Con supporto n8n (opzionale):**
+### 3. Riavvia e Testa
+
+Riavvia il tuo assistente e prova:
+> "elenca i miei agenti VoiceForge"
+
+---
+
+## 🔄 Integrazione n8n (Opzionale - Consigliato)
+
+Per gestire workflow n8n, usa il **server MCP n8n dedicato** insieme a VoiceForge per un'esperienza "plug and play":
+
+### Configurazione Multi-Server
+
+**Antigravity** (`~/.gemini/antigravity/mcp_config.json`):
 
 ```json
 {
   "mcpServers": {
     "voiceforge": {
       "command": "npx",
-      "args": ["-y", "github:almai1/mcp-server-eleven"],
+      "args": ["-y", "--", "github:almai1/mcp-server-eleven"],
       "env": {
-        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI",
-        "N8N_BASE_URL": "https://tuo-dominio.com/api/v1",
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
+      }
+    },
+    "n8n": {
+      "command": "npx",
+      "args": ["-y", "n8n-mcp"],
+      "env": {
+        "N8N_API_URL": "https://n8n.example.com/api/v1",
         "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
       }
     }
@@ -92,26 +88,53 @@ Aggiungi a `~/.cursor/mcp.json`:
 }
 ```
 
-> ⚠️ **Sostituisci** `vf_LA_TUA_API_KEY_QUI` con la tua API key VoiceForge!
-> 
-> 💡 **n8n è opzionale**: Se non configuri `N8N_BASE_URL` e `N8N_API_KEY`, i tools n8n semplicemente non saranno disponibili.
+**Cursor** (`~/.cursor/mcp.json`):
 
-#### 📝 Come ottenere l'API Key n8n
+```json
+{
+  "mcpServers": {
+    "voiceforge": {
+      "command": "npx",
+      "args": ["-y", "--", "github:almai1/mcp-server-eleven"],
+      "env": {
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
+      }
+    },
+    "n8n": {
+      "command": "npx",
+      "args": ["-y", "n8n-mcp"],
+      "env": {
+        "N8N_API_URL": "https://n8n.example.com/api/v1",
+        "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
+      }
+    }
+  }
+}
+```
 
-1. Accedi alla tua istanza n8n (es. `http://10.0.1.113:5678`)
-2. Vai su **Settings** → **API**
-3. Clicca su **Create API Key**
-4. Copia la key generata
+> ⚠️ **Nota importante per n8n**: 
+> - Usa `N8N_API_URL` (non `N8N_BASE_URL`) per il server n8n-mcp
+> - L'URL deve includere `/api/v1` alla fine
+> - Per istanze locali: `http://localhost:5678/api/v1`
 
-### 3. Riavvia e Testa
+### Perché Due Server Separati?
 
-Riavvia il tuo assistente e prova:
+✅ **Separazione delle responsabilità**: VoiceForge gestisce agenti AI, n8n gestisce workflow
+✅ **Manutenzione semplificata**: Ogni server è aggiornato indipendentemente  
+✅ **Flessibilità**: Puoi usare solo VoiceForge, o aggiungere n8n quando serve
+✅ **Hassle-free**: Entrambi funzionano "out of the box" senza configurazioni complesse
+
+### Test
+
+Riavvia l'assistente e prova:
+
+**VoiceForge:**
 > "elenca i miei agenti VoiceForge"
 
-**Con n8n configurato:**
+**n8n (se configurato):**
 > "lista i workflow n8n disponibili"
 
-📖 **Guida completa n8n**: [docs/n8n-integration.md](docs/n8n-integration.md)
+📖 **Documentazione n8n-mcp**: https://github.com/czlonkowski/n8n-mcp
 
 ---
 
