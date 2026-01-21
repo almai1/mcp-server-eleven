@@ -43,13 +43,18 @@ Aggiungi a `~/.gemini/antigravity/mcp_config.json`:
       "args": ["-y", "github:almai1/mcp-server-eleven"],
       "env": {
         "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI",
-        "N8N_BASE_URL": "http://10.0.1.113:5678",
+        "N8N_BASE_URL": "https://tuo-dominio.com/api/v1",
         "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
       }
     }
   }
 }
 ```
+
+> ⚠️ **Importante per n8n**: 
+> - `N8N_BASE_URL` deve includere `/api/v1` (es. `https://n8n.example.com/api/v1`)
+> - Per istanze locali: `http://localhost:5678/api/v1`
+> - Se usi un token JWT, verrà automaticamente usato l'header `Authorization: Bearer`
 
 #### Cursor
 
@@ -79,7 +84,7 @@ Aggiungi a `~/.cursor/mcp.json`:
       "args": ["-y", "github:almai1/mcp-server-eleven"],
       "env": {
         "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI",
-        "N8N_BASE_URL": "http://10.0.1.113:5678",
+        "N8N_BASE_URL": "https://tuo-dominio.com/api/v1",
         "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
       }
     }
