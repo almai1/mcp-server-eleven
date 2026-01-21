@@ -12,9 +12,16 @@
 // Load environment variables from .env file if it exists (local installation)
 // For npx installations, env vars are provided by the MCP config
 try {
-    require('dotenv').config();
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.join(__dirname, '.env');
+
+    // Only try to load dotenv if .env file exists
+    if (fs.existsSync(envPath)) {
+        require('dotenv').config();
+    }
 } catch (e) {
-    // dotenv not available or .env file doesn't exist - that's OK for npx installs
+    // Silently ignore - dotenv is optional
 }
 
 
