@@ -171,7 +171,7 @@ Aggiungi **entrambi i server** al tuo file di configurazione:
     },
     "n8n": {
       "command": "npx",
-      "args": ["-y", "n8n-mcp"],
+      "args": ["-y", "--", "github:czlonkowski/n8n-mcp"],
       "env": {
         "N8N_API_URL": "https://n8n.example.com/api/v1",
         "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
@@ -195,7 +195,7 @@ Aggiungi **entrambi i server** al tuo file di configurazione:
     },
     "n8n": {
       "command": "npx",
-      "args": ["-y", "n8n-mcp"],
+      "args": ["-y", "--", "github:czlonkowski/n8n-mcp"],
       "env": {
         "N8N_API_URL": "https://n8n.example.com/api/v1",
         "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
