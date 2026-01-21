@@ -8,8 +8,15 @@
  * @see https://voiceforge.super-chatbot.com
  */
 
-// Load environment variables from .env file
-require('dotenv').config();
+
+// Load environment variables from .env file if it exists (local installation)
+// For npx installations, env vars are provided by the MCP config
+try {
+    require('dotenv').config();
+} catch (e) {
+    // dotenv not available or .env file doesn't exist - that's OK for npx installs
+}
+
 
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
