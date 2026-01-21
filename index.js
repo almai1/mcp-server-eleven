@@ -1206,8 +1206,7 @@ CONNESSIONI: Usa nomi nodi, NON id. Formato: {"NodeName":{"main":[[{"node":"Targ
                 name,
                 nodes: nodes || [],
                 connections: connections || {},
-                settings: settings || {},
-                tags: [`agent:${agentId}`] // Auto-tagging
+                settings: settings || {}
             });
             return ok(`✅ Workflow n8n "${workflow.name}" creato per agente ${agentId}!\n\nID: ${workflow.id}`);
         } catch (e) { return err(e); }
