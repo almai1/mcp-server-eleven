@@ -51,10 +51,100 @@ Aggiungi a `~/.cursor/mcp.json`:
 }
 ```
 
-### 3. Riavvia e Testa
+---
 
-Riavvia il tuo assistente e prova:
+## 📝 Come Aggiungere il Server MCP
+
+### Passo 1: Localizza il File di Configurazione
+
+Il file di configurazione MCP si trova in posizioni diverse a seconda del tuo sistema operativo e dell'IDE:
+
+**Antigravity (Gemini):**
+- **Windows**: `C:\Users\TuoUtente\.gemini\antigravity\mcp_config.json`
+- **macOS/Linux**: `~/.gemini/antigravity/mcp_config.json`
+
+**Cursor:**
+- **Windows**: `C:\Users\TuoUtente\.cursor\mcp.json`
+- **macOS/Linux**: `~/.cursor/mcp.json`
+
+> 💡 **Trova rapidamente il file**:
+> - Windows: Apri Esplora File e digita `%USERPROFILE%\.gemini\antigravity` nella barra degli indirizzi
+> - macOS/Linux: Apri il terminale e usa `open ~/.gemini/antigravity` (macOS) o `cd ~/.gemini/antigravity` (Linux)
+
+### Passo 2: Crea o Modifica il File
+
+Se il file **non esiste**, crealo con questo contenuto:
+
+**Per Antigravity** (`mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "voiceforge": {
+      "command": "npx",
+      "args": ["-y", "--", "github:almai1/mcp-server-eleven"],
+      "env": {
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
+      }
+    }
+  }
+}
+```
+
+**Per Cursor** (`mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "voiceforge": {
+      "command": "npx",
+      "args": ["-y", "--", "github:almai1/mcp-server-eleven"],
+      "env": {
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
+      }
+    }
+  }
+}
+```
+
+Se il file **esiste già**, aggiungi `"voiceforge"` all'interno di `"mcpServers"`:
+
+```json
+{
+  "mcpServers": {
+    "altro-server": {
+      // ... configurazione esistente
+    },
+    "voiceforge": {
+      "command": "npx",
+      "args": ["-y", "--", "github:almai1/mcp-server-eleven"],
+      "env": {
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
+      }
+    }
+  }
+}
+```
+
+### Passo 3: Ottieni la tua API Key
+
+1. Vai su https://voiceforge.super-chatbot.com
+2. Registrati o fai login
+3. Vai su **Dashboard** → **API Keys**
+4. Clicca su **Crea Nuova Key**
+5. Copia la key (inizia con `vf_...`)
+6. Sostituisci `vf_LA_TUA_API_KEY_QUI` nel file di configurazione
+
+### Passo 4: Riavvia l'IDE
+
+Chiudi completamente e riapri Antigravity o Cursor per caricare il server MCP.
+
+### Passo 5: Verifica l'Installazione
+
+Testa il server chiedendo al tuo assistente:
 > "elenca i miei agenti VoiceForge"
+
+Se ricevi una risposta con la lista degli agenti (o un messaggio che non ne hai ancora), il server è configurato correttamente! ✅
 
 ---
 
@@ -63,6 +153,9 @@ Riavvia il tuo assistente e prova:
 Per gestire workflow n8n, usa il **server MCP n8n dedicato** insieme a VoiceForge per un'esperienza "plug and play":
 
 ### Configurazione Multi-Server
+
+Aggiungi **entrambi i server** al tuo file di configurazione:
+
 
 **Antigravity** (`~/.gemini/antigravity/mcp_config.json`):
 
