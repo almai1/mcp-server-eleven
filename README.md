@@ -593,6 +593,47 @@ Se `npx github:...` fallisce:
 
 ---
 
+## ⚠️ Important Notes
+
+### n8n Workflow Webhooks Created via API
+
+> **CRITICAL**: When you create an n8n workflow with webhook nodes via the MCP API, the webhooks **will NOT be automatically registered** in n8n's routing system.
+
+**Symptom:**
+- Workflow appears as "active" in API responses
+- Webhook calls return `404 Not Found: "The requested webhook is not registered"`
+- Error message suggests "The workflow must be active for a production URL to run successfully"
+
+**Root Cause:**
+n8n only registers webhook routes when a workflow is opened and saved through the web UI, even if it was created and activated via API.
+
+**Solution:**
+After creating a webhook workflow via MCP tools, you MUST:
+
+1. **Open n8n web UI** (e.g., `https://n8n.super-chatbot.com`)
+2. **Open the workflow** you created
+3. **Click "Save"** (even without making any changes)
+4. **Activate the workflow** using the toggle in the top-right
+
+Only after these steps will the webhook be accessible at:
+- **Production URL**: `https://your-n8n-domain.com/webhook/your-path`
+- **Test URL**: `https://your-n8n-domain.com/webhook-test/your-path`
+
+**Example:**
+```bash
+# This will fail with 404 immediately after creating via API:
+curl -X POST https://n8n.super-chatbot.com/webhook/gabetti-lead \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","budget":"100000"}'
+
+# After opening and saving in UI, it will work:
+# ✅ Returns workflow response
+```
+
+This is a known limitation of n8n's architecture and affects all workflows created programmatically.
+
+---
+
 ## 📄 License
 
 MIT
