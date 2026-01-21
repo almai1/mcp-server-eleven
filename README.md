@@ -13,6 +13,8 @@ Client MCP per gestire agenti AI VoiceForge da **Cursor**, **Antigravity (Gemini
 
 ### 2. Configura il tuo assistente
 
+> 💡 **Installa SOLO quello che usi** (Antigravity O Cursor, non entrambi)
+
 #### Antigravity (Gemini)
 
 Aggiungi a `~/.gemini/antigravity/mcp_config.json`:
@@ -25,6 +27,24 @@ Aggiungi a `~/.gemini/antigravity/mcp_config.json`:
       "args": ["-y", "github:almai1/mcp-server-eleven"],
       "env": {
         "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
+      }
+    }
+  }
+}
+```
+
+**Con supporto n8n (opzionale):**
+
+```json
+{
+  "mcpServers": {
+    "voiceforge": {
+      "command": "npx",
+      "args": ["-y", "github:almai1/mcp-server-eleven"],
+      "env": {
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI",
+        "N8N_BASE_URL": "http://10.0.1.113:5678",
+        "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
       }
     }
   }
@@ -49,12 +69,44 @@ Aggiungi a `~/.cursor/mcp.json`:
 }
 ```
 
-> ⚠️ **Sostituisci** `vf_LA_TUA_API_KEY_QUI` con la tua API key personale!
+**Con supporto n8n (opzionale):**
+
+```json
+{
+  "mcpServers": {
+    "voiceforge": {
+      "command": "npx",
+      "args": ["-y", "github:almai1/mcp-server-eleven"],
+      "env": {
+        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI",
+        "N8N_BASE_URL": "http://10.0.1.113:5678",
+        "N8N_API_KEY": "LA_TUA_N8N_API_KEY_QUI"
+      }
+    }
+  }
+}
+```
+
+> ⚠️ **Sostituisci** `vf_LA_TUA_API_KEY_QUI` con la tua API key VoiceForge!
+> 
+> 💡 **n8n è opzionale**: Se non configuri `N8N_BASE_URL` e `N8N_API_KEY`, i tools n8n semplicemente non saranno disponibili.
+
+#### 📝 Come ottenere l'API Key n8n
+
+1. Accedi alla tua istanza n8n (es. `http://10.0.1.113:5678`)
+2. Vai su **Settings** → **API**
+3. Clicca su **Create API Key**
+4. Copia la key generata
 
 ### 3. Riavvia e Testa
 
 Riavvia il tuo assistente e prova:
 > "elenca i miei agenti VoiceForge"
+
+**Con n8n configurato:**
+> "lista i workflow n8n disponibili"
+
+📖 **Guida completa n8n**: [docs/n8n-integration.md](docs/n8n-integration.md)
 
 ---
 
@@ -219,7 +271,7 @@ I **Prompts** sono template riutilizzabili per creare agenti.
 | `delete_webhook` | Elimina webhook |
 | `test_webhook` | Testa webhook |
 
-### ⚙️ Workflows
+### ⚙️ Workflows (VoiceForge)
 | Tool | Descrizione |
 |------|-------------|
 | `list_workflows` | Lista workflow |
@@ -229,6 +281,27 @@ I **Prompts** sono template riutilizzabili per creare agenti.
 | `delete_workflow` | Elimina workflow |
 | `execute_workflow` | Esegui workflow |
 | `publish_workflow` | Pubblica versione |
+
+### 🔄 n8n Workflows
+> **Richiede configurazione**: `N8N_BASE_URL` e `N8N_API_KEY`
+
+| Tool | Descrizione |
+|------|-------------|
+| `list_n8n_workflows` | Lista workflow n8n per agente |
+| `get_n8n_workflow` | Dettagli workflow n8n |
+| `create_n8n_workflow` | Crea workflow n8n *(con istruzioni formato nodi)* |
+| `update_n8n_workflow` | Modifica workflow n8n esistente |
+| `delete_n8n_workflow` | Elimina workflow n8n |
+| `activate_n8n_workflow` | Attiva workflow n8n |
+| `deactivate_n8n_workflow` | Disattiva workflow n8n |
+| `execute_n8n_workflow` | Esegui workflow n8n manualmente |
+| `get_n8n_execution` | Stato/risultato esecuzione |
+| `list_n8n_executions` | Lista esecuzioni recenti |
+
+**Esempio creazione workflow n8n:**
+```
+> Crea un workflow n8n per l'agente [ID] che riceve webhook POST su /test-webhook e risponde con {"success": true}
+```
 
 ### 🔌 Integrazioni
 | Tool | Descrizione |
@@ -302,11 +375,23 @@ I **Prompts** sono template riutilizzabili per creare agenti.
 
 ## 💬 Esempi d'uso
 
+### VoiceForge Agenti
+
 > "Crea un agente customer service per un'agenzia viaggi che parla italiano"
 
 > "Aggiungi alla knowledge base le FAQ dal sito www.esempio.com"
 
 > "Aggiorna il prompt di sistema dell'agente per renderlo più formale"
+
+### n8n Workflows (se configurato)
+
+> "Lista i workflow n8n per l'agente [ID]"
+
+> "Crea un workflow n8n che riceve webhook POST e invia i dati a Slack"
+
+> "Attiva il workflow n8n [WORKFLOW_ID] per l'agente [AGENT_ID]"
+
+> "Mostrami lo stato dell'ultima esecuzione del workflow [WORKFLOW_ID]"
 
 ---
 
