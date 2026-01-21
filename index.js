@@ -8,6 +8,9 @@
  * @see https://voiceforge.super-chatbot.com
  */
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { z } = require('zod');

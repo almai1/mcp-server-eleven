@@ -54,7 +54,7 @@ Aggiungi a `~/.gemini/antigravity/mcp_config.json`:
 > ⚠️ **Importante per n8n**: 
 > - `N8N_BASE_URL` deve includere `/api/v1` (es. `https://n8n.example.com/api/v1`)
 > - Per istanze locali: `http://localhost:5678/api/v1`
-> - Se usi un token JWT, verrà automaticamente usato l'header `Authorization: Bearer`
+> - L'API key viene passata automaticamente nell'header `X-N8N-API-KEY`
 
 #### Cursor
 
@@ -159,7 +159,30 @@ cd mcp-server-eleven
 npm install
 ```
 
-### 2. Configura con path locale
+### 2. Configura le credenziali
+
+Crea il file `.env` partendo dall'esempio:
+
+```bash
+# Linux/Mac
+cp .env.example .env
+
+# Windows
+copy .env.example .env
+```
+
+Poi modifica `.env` con le tue credenziali:
+
+```env
+# REQUIRED: API Key VoiceForge
+VOICEFORGE_API_KEY=vf_LA_TUA_API_KEY_QUI
+
+# OPTIONAL: Solo se usi n8n
+N8N_BASE_URL=https://tuo-dominio.com/api/v1
+N8N_API_KEY=LA_TUA_N8N_API_KEY_QUI
+```
+
+### 3. Configura con path locale
 
 **Antigravity** (`~/.gemini/antigravity/mcp_config.json`):
 
@@ -168,14 +191,13 @@ npm install
   "mcpServers": {
     "voiceforge": {
       "command": "node",
-      "args": ["/percorso/completo/mcp-server-eleven/index.js"],
-      "env": {
-        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
-      }
+      "args": ["/percorso/completo/mcp-server-eleven/index.js"]
     }
   }
 }
 ```
+
+> 💡 **Le variabili d'ambiente vengono caricate dal file `.env`**, quindi non serve ripeterle nella config!
 
 **Windows esempio:**
 ```json
@@ -183,10 +205,7 @@ npm install
   "mcpServers": {
     "voiceforge": {
       "command": "node",
-      "args": ["C:/Users/TuoUtente/mcp-server-eleven/index.js"],
-      "env": {
-        "VOICEFORGE_API_KEY": "vf_LA_TUA_API_KEY_QUI"
-      }
+      "args": ["C:/Users/TuoUtente/mcp-server-eleven/index.js"]
     }
   }
 }
@@ -412,7 +431,13 @@ I **Prompts** sono template riutilizzabili per creare agenti.
 
 3. **Testa il server manualmente:**
    ```bash
+   # Con variabile d'ambiente
    VOICEFORGE_API_KEY=vf_... node index.js
+   
+   # Oppure con file .env (installazione locale)
+   cd /path/to/mcp-server-eleven
+   # Assicurati che il file .env esista con le credenziali
+   node index.js
    ```
 
 ### Errore API Key
@@ -420,7 +445,22 @@ I **Prompts** sono template riutilizzabili per creare agenti.
 Assicurati che:
 - La key inizi con `vf_`
 - La key sia valida (creata da https://voiceforge.super-chatbot.com/api-keys)
-- La variabile `VOICEFORGE_API_KEY` sia configurata nel file JSON
+- Per installazione con `npx`: La variabile `VOICEFORGE_API_KEY` sia configurata nel file JSON
+- Per installazione locale: Il file `.env` esista e contenga `VOICEFORGE_API_KEY=vf_...`
+
+### Errore n8n: 401 Unauthorized
+
+Se ricevi errori 401 chiamando tools n8n:
+
+1. **Verifica che `N8N_API_KEY` sia configurata**
+   - Per `npx`: Aggiungila in `env` nel file config JSON
+   - Per installazione locale: Aggiungila nel file `.env`
+
+2. **Verifica che `N8N_BASE_URL` includa `/api/v1`**
+   - ✅ Corretto: `https://n8n.example.com/api/v1`
+   - ❌ Errato: `https://n8n.example.com`
+
+3. **Riavvia Antigravity/Cursor** dopo aver modificato la configurazione
 
 ### Repository GitHub non trovato
 
