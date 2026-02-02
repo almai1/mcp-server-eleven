@@ -32,7 +32,7 @@ const { z } = require('zod');
 // Configuration
 const API_KEY = process.env.VOICEFORGE_API_KEY;
 const BASE_URL = process.env.VOICEFORGE_URL || 'https://voiceforge.super-chatbot.com';
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 
 if (!API_KEY) {
     console.error('❌ ERRORE: VOICEFORGE_API_KEY è richiesta');
@@ -1717,6 +1717,160 @@ server.tool(
             if (!products?.length) return ok('Nessun prodotto trovato con questi criteri');
             const summary = products.map(p => `• ${p.title || p.name || 'Senza titolo'}\n  Prezzo: ${p.price || 'N/A'} | Zona: ${p.zone || 'N/A'}`).join('\n\n');
             return ok(`Trovati ${total} prodotti (mostrati ${products.length}):\n\n${summary}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// STRUCTURED RAG TOOLS
+// ======================
+
+server.tool(
+    'enable_structured_rag',
+    'Abilita RAG strutturato per un agente. Richiede productType (es: immobile, auto, servizio)',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        productType: z.string().describe('Tipo prodotto: immobile, auto, servizio, prodotto_generico'),
+        sampleContent: z.string().optional().describe('Contenuto esempio per generare lo schema')
+    },
+    async ({ agentId, productType, sampleContent }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/product-config`, 'POST', {
+                productType,
+                ragMode: 'structured',
+                sampleContent
+            });
+            return ok(`✅ RAG Strutturato abilitato!\n\nTipo: ${result.productType}\nCampi schema: ${result.fieldsCount}\nModalità: ${result.ragMode}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'disable_structured_rag',
+    'Disabilita RAG strutturato e torna a modalità semantica',
+    { agentId: z.string().describe('ID dell\'agente') },
+    async ({ agentId }) => {
+        try {
+            await api(`/api/agents/${agentId}/product-config`, 'DELETE');
+            return ok('✅ RAG Strutturato disabilitato. Tornato a modalità semantica.');
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// SCRAPING TOOLS
+// ======================
+
+server.tool(
+    'start_scrape',
+    'Avvia scraping di un sito web per estrarre knowledge base',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        url: z.string().describe('URL del sito da scrappare'),
+        mode: z.enum(['single', 'full']).optional().describe('Modalità: single (solo pagina), full (intero sito)'),
+        maxPages: z.number().optional().describe('Numero massimo pagine (default: 50)'),
+        processWithLLM: z.boolean().optional().describe('Elaborazione LLM (default: true)'),
+        analyzeImages: z.boolean().optional().describe('Analizza immagini (default: false)')
+    },
+    async ({ agentId, url, mode = 'full', maxPages = 50, processWithLLM = true, analyzeImages = false }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/knowledge/scrape`, 'POST', {
+                url,
+                mode,
+                options: { maxPages, followLinks: mode === 'full' },
+                processWithLLM,
+                analyzeImages,
+                concurrentLLM: 3
+            });
+            return ok(`✅ Scraping avviato!\n\nKnowledge Base ID: ${result.knowledgeBase?.id}\nNome: ${result.knowledgeBase?.name}\nModalità: ${mode}\nMax pagine: ${maxPages}\n\n⏳ Lo scraping è in corso in background...`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'get_scrape_options',
+    'Ottieni le opzioni di scraping disponibili',
+    { agentId: z.string().describe('ID dell\'agente') },
+    async ({ agentId }) => {
+        try {
+            const options = await api(`/api/agents/${agentId}/knowledge/scrape`);
+            return ok(`Opzioni Scraping:\n\n${JSON.stringify(options, null, 2)}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// KNOWLEDGE DELETE/UPDATE
+// ======================
+
+server.tool(
+    'delete_knowledge',
+    'Elimina una knowledge base e tutti i suoi chunks',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        kbId: z.string().describe('ID della knowledge base da eliminare')
+    },
+    async ({ agentId, kbId }) => {
+        try {
+            await api(`/api/agents/${agentId}/knowledge/${kbId}`, 'DELETE');
+            return ok('✅ Knowledge base eliminata');
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'update_knowledge',
+    'Aggiorna nome/descrizione di una knowledge base',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        kbId: z.string().describe('ID della knowledge base'),
+        name: z.string().optional().describe('Nuovo nome'),
+        description: z.string().optional().describe('Nuova descrizione')
+    },
+    async ({ agentId, kbId, ...data }) => {
+        try {
+            const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+            const { knowledgeBase } = await api(`/api/agents/${agentId}/knowledge/${kbId}`, 'PATCH', cleanData);
+            return ok(`✅ Knowledge base "${knowledgeBase.name}" aggiornata`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'get_knowledge',
+    'Ottieni dettagli di una knowledge base specifica',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        kbId: z.string().describe('ID della knowledge base')
+    },
+    async ({ agentId, kbId }) => {
+        try {
+            const { knowledgeBase } = await api(`/api/agents/${agentId}/knowledge/${kbId}`);
+            return ok(`Knowledge Base:\n\nID: ${knowledgeBase.id}\nNome: ${knowledgeBase.name}\nTipo: ${knowledgeBase.type}\nChunks: ${knowledgeBase._count?.chunks || 0}\nCreata: ${new Date(knowledgeBase.createdAt).toLocaleString('it-IT')}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// CONVERSATIONS TOOLS  
+// ======================
+
+server.tool(
+    'list_conversations',
+    'Lista le conversazioni di un agente',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        page: z.number().optional().describe('Numero pagina (default: 1)'),
+        limit: z.number().optional().describe('Risultati per pagina (default: 20)')
+    },
+    async ({ agentId, page = 1, limit = 20 }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/conversations?page=${page}&limit=${limit}`);
+            if (!result.conversations?.length) return ok('Nessuna conversazione trovata');
+            const summary = result.conversations.map(c =>
+                `• ${c.title || 'Senza titolo'} (${c.messageCount} msg)\n  Status: ${c.status} | ${new Date(c.updatedAt).toLocaleString('it-IT')}`
+            ).join('\n\n');
+            return ok(`Conversazioni (pagina ${result.pagination.page}/${result.pagination.totalPages}):\n\n${summary}`);
         } catch (e) { return err(e); }
     }
 );
