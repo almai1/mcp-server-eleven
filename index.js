@@ -32,7 +32,7 @@ const { z } = require('zod');
 // Configuration
 const API_KEY = process.env.VOICEFORGE_API_KEY;
 const BASE_URL = process.env.VOICEFORGE_URL || 'https://voiceforge.super-chatbot.com';
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 
 if (!API_KEY) {
     console.error('❌ ERRORE: VOICEFORGE_API_KEY è richiesta');
@@ -1563,6 +1563,161 @@ Setup:
                 }
             }]
         };
+    }
+);
+
+// ======================
+// PRODUCT CONFIG TOOLS
+// ======================
+
+server.tool(
+    'get_product_config',
+    'Ottieni la configurazione prodotti/RAG di un agente',
+    { agentId: z.string().describe('ID dell\'agente') },
+    async ({ agentId }) => {
+        try {
+            const config = await api(`/api/agents/${agentId}/product-config`);
+            return ok(`Configurazione Prodotti:\n\n• Tipo: ${config.config?.productType || 'N/A'}\n• RAG Mode: ${config.ragMode}\n• Schema: ${config.config?.hasSchema ? 'Sì' : 'No'}\n• Modelli:\n  - Estrazione: ${config.config?.extractionModel || 'default'}\n  - Classificazione: ${config.config?.classificationModel || 'default'}\n  - Filtro: ${config.config?.filterModel || 'default'}\n• Search Prompt: ${config.config?.searchPrompt ? 'Personalizzato' : 'Default'}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'update_product_config',
+    'Aggiorna la configurazione prodotti di un agente (searchPrompt, modelli LLM)',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        searchPrompt: z.string().optional().describe('Prompt personalizzato per la ricerca prodotti (guida l\'LLM)'),
+        extractionModel: z.string().optional().describe('Modello per estrazione dati'),
+        classificationModel: z.string().optional().describe('Modello per classificazione'),
+        filterModel: z.string().optional().describe('Modello per filtri'),
+        schemaGenerationModel: z.string().optional().describe('Modello per generazione schema')
+    },
+    async ({ agentId, ...data }) => {
+        try {
+            const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+            await api(`/api/agents/${agentId}/product-config`, 'PATCH', cleanData);
+            const updatedFields = Object.keys(cleanData).join(', ');
+            return ok(`✅ Configurazione aggiornata!\n\nCampi modificati: ${updatedFields}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// AGENT TOOLS MANAGEMENT
+// ======================
+
+server.tool(
+    'list_agent_tools',
+    'Lista gli strumenti esterni configurati per un agente',
+    { agentId: z.string().describe('ID dell\'agente') },
+    async ({ agentId }) => {
+        try {
+            const { tools } = await api(`/api/agents/${agentId}/tools`);
+            if (!tools?.length) return ok('Nessuno strumento configurato');
+            const summary = tools.map(t => `• ${t.name} (${t.type}) - ${t.enabled ? '✅ Attivo' : '❌ Disattivo'}\n  ID: ${t.id}`).join('\n\n');
+            return ok(`Strumenti agente:\n\n${summary}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'configure_agent_tool',
+    'Configura uno strumento esterno per un agente',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        type: z.enum(['calendar', 'email', 'crm', 'custom_api', 'database', 'http', 'custom']).describe('Tipo strumento'),
+        name: z.string().describe('Nome strumento'),
+        description: z.string().describe('Descrizione strumento'),
+        config: z.record(z.any()).describe('Configurazione specifica'),
+        parameters: z.record(z.any()).describe('Schema parametri JSON'),
+        enabled: z.boolean().optional().describe('Attivo (default: true)')
+    },
+    async ({ agentId, ...toolData }) => {
+        try {
+            const { tool } = await api(`/api/agents/${agentId}/tools`, 'POST', toolData);
+            return ok(`✅ Strumento "${tool.name}" configurato!\n\nID: ${tool.id}\nTipo: ${tool.type}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'update_agent_tool',
+    'Aggiorna uno strumento esterno esistente',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        toolId: z.string().describe('ID dello strumento'),
+        name: z.string().optional().describe('Nuovo nome'),
+        description: z.string().optional().describe('Nuova descrizione'),
+        config: z.record(z.any()).optional().describe('Nuova configurazione'),
+        enabled: z.boolean().optional().describe('Attiva/disattiva')
+    },
+    async ({ agentId, toolId, ...data }) => {
+        try {
+            const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+            const { tool } = await api(`/api/agents/${agentId}/tools/${toolId}`, 'PATCH', cleanData);
+            return ok(`✅ Strumento "${tool.name}" aggiornato`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'delete_agent_tool',
+    'Rimuovi uno strumento esterno da un agente',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        toolId: z.string().describe('ID dello strumento da rimuovere')
+    },
+    async ({ agentId, toolId }) => {
+        try {
+            await api(`/api/agents/${agentId}/tools/${toolId}`, 'DELETE');
+            return ok('✅ Strumento rimosso');
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// PRODUCTS/RAG TOOLS
+// ======================
+
+server.tool(
+    'list_products',
+    'Lista i prodotti/immobili estratti per un agente',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        limit: z.number().optional().describe('Limite risultati (default: 20)')
+    },
+    async ({ agentId, limit = 20 }) => {
+        try {
+            const { products, total } = await api(`/api/agents/${agentId}/products?limit=${limit}`);
+            if (!products?.length) return ok('Nessun prodotto trovato');
+            const summary = products.map(p => `• ${p.title || p.name || 'Senza titolo'}\n  Prezzo: ${p.price || 'N/A'} | ID: ${p.id}`).join('\n\n');
+            return ok(`Prodotti (${products.length}/${total}):\n\n${summary}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'search_products',
+    'Cerca prodotti con filtri specifici',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        priceMin: z.number().optional().describe('Prezzo minimo'),
+        priceMax: z.number().optional().describe('Prezzo massimo'),
+        zone: z.string().optional().describe('Zona/quartiere'),
+        rooms: z.number().optional().describe('Numero locali'),
+        query: z.string().optional().describe('Ricerca testuale'),
+        limit: z.number().optional().describe('Limite risultati (default: 10)')
+    },
+    async ({ agentId, limit = 10, ...filters }) => {
+        try {
+            const cleanFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== undefined));
+            const params = new URLSearchParams({ limit: String(limit), ...cleanFilters });
+            const { products, total } = await api(`/api/agents/${agentId}/products/search?${params.toString()}`);
+            if (!products?.length) return ok('Nessun prodotto trovato con questi criteri');
+            const summary = products.map(p => `• ${p.title || p.name || 'Senza titolo'}\n  Prezzo: ${p.price || 'N/A'} | Zona: ${p.zone || 'N/A'}`).join('\n\n');
+            return ok(`Trovati ${total} prodotti (mostrati ${products.length}):\n\n${summary}`);
+        } catch (e) { return err(e); }
     }
 );
 
