@@ -32,7 +32,7 @@ const { z } = require('zod');
 // Configuration
 const API_KEY = process.env.VOICEFORGE_API_KEY;
 const BASE_URL = process.env.VOICEFORGE_URL || 'https://voiceforge.super-chatbot.com';
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 
 if (!API_KEY) {
     console.error('❌ ERRORE: VOICEFORGE_API_KEY è richiesta');
@@ -240,6 +240,146 @@ server.tool(
         try {
             const { knowledgeBase } = await api(`/api/agents/${agentId}/knowledge`, 'POST', { name, url, type: 'url' });
             return ok(`✅ Knowledge base "${knowledgeBase.name}" creata da URL`);
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
+// PRODUCT SCHEMA TOOLS
+// ======================
+
+server.tool(
+    'list_product_schemas',
+    'Lista gli schemi di estrazione prodotto configurati per un agente',
+    { agentId: z.string().describe('ID dell\'agente') },
+    async ({ agentId }) => {
+        try {
+            const { productTypes, ragMode } = await api(`/api/agents/${agentId}/product-config`);
+            if (!productTypes?.length) return ok(`Nessuno schema prodotto configurato.\n\nRAG Mode: ${ragMode || 'semantic'}`);
+            const summary = productTypes.map(t => `• ${t.productType} (${t.schemaFields?.length || 0} campi)`).join('\n');
+            return ok(`Schemi prodotto (RAG Mode: ${ragMode}):\n\n${summary}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'get_product_schema',
+    'Ottieni i dettagli di uno schema prodotto',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        productType: z.string().describe('Nome del tipo prodotto')
+    },
+    async ({ agentId, productType }) => {
+        try {
+            const { productTypes } = await api(`/api/agents/${agentId}/product-config`);
+            const schema = productTypes?.find(t => t.productType === productType);
+            if (!schema) return err(`Schema "${productType}" non trovato`);
+            return ok(schema);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'discover_schema_from_url',
+    'Analizza una pagina web e suggerisce campi per lo schema di estrazione',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        exampleUrl: z.string().url().describe('URL di una pagina prodotto di esempio da analizzare')
+    },
+    async ({ agentId, exampleUrl }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/product-config/generate-schema`, 'POST', { exampleUrl });
+            const fieldsCount = result.fields?.length || 0;
+            const fieldsList = result.fields?.slice(0, 10).map(f => `• ${f.name} (${f.type}): ${f.description || ''}`).join('\n') || 'Nessun campo rilevato';
+            return ok(`🔍 Schema Discovery da: ${exampleUrl}\n\nCategoria rilevata: ${result.category || 'generico'}\nCampi suggeriti: ${fieldsCount}\n\n${fieldsList}${fieldsCount > 10 ? '\n... e altri' : ''}\n\nUsa create_product_schema per creare lo schema con questi campi.`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'create_product_schema',
+    'Crea un nuovo schema di estrazione prodotto per l\'agente',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        productType: z.string().describe('Nome del tipo prodotto (es: immobile, veicolo)'),
+        sampleContent: z.string().optional().describe('Contenuto di esempio per generazione automatica campi'),
+        discoveredFields: z.array(z.object({
+            name: z.string(),
+            type: z.enum(['string', 'number', 'boolean']).optional(),
+            description: z.string().optional(),
+            required: z.boolean().optional(),
+            indexed: z.boolean().optional()
+        })).optional().describe('Campi da includere (da discover_schema_from_url)')
+    },
+    async ({ agentId, productType, sampleContent, discoveredFields }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/product-config`, 'POST', {
+                productType,
+                sampleContent,
+                discoveredFields
+            });
+            return ok(`✅ Schema "${productType}" creato!\n\nCampi: ${result.fieldsCount || 0}\nRAG Mode: ${result.ragMode || 'structured'}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'add_schema_field',
+    'Aggiungi un campo personalizzato a uno schema prodotto',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        productType: z.string().optional().describe('Tipo prodotto (opzionale se ne esiste solo uno)'),
+        name: z.string().describe('Nome del campo (es: colore, materiale)'),
+        type: z.enum(['string', 'number', 'boolean']).optional().describe('Tipo dati (default: string)'),
+        description: z.string().optional().describe('Descrizione del campo'),
+        required: z.boolean().optional().describe('Campo obbligatorio (default: false)'),
+        indexed: z.boolean().optional().describe('Campo ricercabile (default: false)')
+    },
+    async ({ agentId, productType, name, type, description, required, indexed }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/product-config/fields`, 'POST', {
+                productType,
+                name,
+                type: type || 'string',
+                description: description || '',
+                required: required || false,
+                indexed: indexed || false
+            });
+            return ok(`✅ Campo "${name}" aggiunto!\n\nCampi totali: ${result.fieldsCount}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'remove_schema_field',
+    'Rimuovi un campo da uno schema prodotto',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        fieldName: z.string().describe('Nome del campo da rimuovere'),
+        productType: z.string().optional().describe('Tipo prodotto (opzionale se ne esiste solo uno)')
+    },
+    async ({ agentId, fieldName, productType }) => {
+        try {
+            const params = new URLSearchParams({ fieldName });
+            if (productType) params.append('productType', productType);
+            const result = await api(`/api/agents/${agentId}/product-config/fields?${params.toString()}`, 'DELETE');
+            return ok(`✅ Campo "${fieldName}" rimosso!\n\nCampi rimanenti: ${result.fieldsCount}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'delete_product_schema',
+    'Elimina uno schema prodotto (e tutti i suoi dati strutturati)',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        productType: z.string().describe('Tipo prodotto da eliminare')
+    },
+    async ({ agentId, productType }) => {
+        try {
+            const params = new URLSearchParams({ productType });
+            await api(`/api/agents/${agentId}/product-config?${params.toString()}`, 'DELETE');
+            return ok(`✅ Schema "${productType}" eliminato`);
         } catch (e) { return err(e); }
     }
 );
