@@ -1744,42 +1744,8 @@ server.tool(
 );
 
 // ======================
-// AGENT TOOLS MANAGEMENT
+// AGENT TOOLS UPDATE (unique tool)
 // ======================
-
-server.tool(
-    'list_agent_tools',
-    'Lista gli strumenti esterni configurati per un agente',
-    { agentId: z.string().describe('ID dell\'agente') },
-    async ({ agentId }) => {
-        try {
-            const { tools } = await api(`/api/agents/${agentId}/tools`);
-            if (!tools?.length) return ok('Nessuno strumento configurato');
-            const summary = tools.map(t => `• ${t.name} (${t.type}) - ${t.enabled ? '✅ Attivo' : '❌ Disattivo'}\n  ID: ${t.id}`).join('\n\n');
-            return ok(`Strumenti agente:\n\n${summary}`);
-        } catch (e) { return err(e); }
-    }
-);
-
-server.tool(
-    'configure_agent_tool',
-    'Configura uno strumento esterno per un agente',
-    {
-        agentId: z.string().describe('ID dell\'agente'),
-        type: z.enum(['calendar', 'email', 'crm', 'custom_api', 'database', 'http', 'custom']).describe('Tipo strumento'),
-        name: z.string().describe('Nome strumento'),
-        description: z.string().describe('Descrizione strumento'),
-        config: z.record(z.any()).describe('Configurazione specifica'),
-        parameters: z.record(z.any()).describe('Schema parametri JSON'),
-        enabled: z.boolean().optional().describe('Attivo (default: true)')
-    },
-    async ({ agentId, ...toolData }) => {
-        try {
-            const { tool } = await api(`/api/agents/${agentId}/tools`, 'POST', toolData);
-            return ok(`✅ Strumento "${tool.name}" configurato!\n\nID: ${tool.id}\nTipo: ${tool.type}`);
-        } catch (e) { return err(e); }
-    }
-);
 
 server.tool(
     'update_agent_tool',
@@ -1797,21 +1763,6 @@ server.tool(
             const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
             const { tool } = await api(`/api/agents/${agentId}/tools/${toolId}`, 'PATCH', cleanData);
             return ok(`✅ Strumento "${tool.name}" aggiornato`);
-        } catch (e) { return err(e); }
-    }
-);
-
-server.tool(
-    'delete_agent_tool',
-    'Rimuovi uno strumento esterno da un agente',
-    {
-        agentId: z.string().describe('ID dell\'agente'),
-        toolId: z.string().describe('ID dello strumento da rimuovere')
-    },
-    async ({ agentId, toolId }) => {
-        try {
-            await api(`/api/agents/${agentId}/tools/${toolId}`, 'DELETE');
-            return ok('✅ Strumento rimosso');
         } catch (e) { return err(e); }
     }
 );
