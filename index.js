@@ -244,9 +244,89 @@ server.tool(
     }
 );
 
+server.tool(
+    'scrape_knowledge',
+    'Esegue lo scraping di un sito web per popolare la knowledge base. Supporta include/exclude patterns.',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        knowledgeBaseId: z.string().describe('ID della knowledge base da popolare'),
+        url: z.string().url().describe('URL di partenza per lo scraping'),
+        maxPages: z.number().optional().describe('Numero massimo di pagine da scrapare (default: 50)'),
+        includePatterns: z.array(z.string()).optional().describe('Pattern URL da includere (es: ["/prodotti/", "/servizi/"])'),
+        excludePatterns: z.array(z.string()).optional().describe('Pattern URL da escludere (es: ["/privacy", "/cookie"])'),
+        usePlaywright: z.boolean().optional().describe('Usa Playwright per JS rendering (default: true)')
+    },
+    async ({ agentId, knowledgeBaseId, url, maxPages, includePatterns, excludePatterns, usePlaywright }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/knowledge/scrape`, 'POST', {
+                knowledgeBaseId,
+                url,
+                maxPages: maxPages || 50,
+                includePatterns: includePatterns || [],
+                excludePatterns: excludePatterns || [],
+                usePlaywright: usePlaywright !== false
+            });
+            return ok(`✅ Scraping avviato!
+
+Knowledge Base: ${result.knowledgeBaseName || knowledgeBaseId}
+URL: ${url}
+Max Pagine: ${maxPages || 50}
+Job ID: ${result.jobId || 'N/A'}
+
+Lo scraping è in background. Usa get_scrape_status per monitorare.`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'rescrape_knowledge',
+    'Ri-esegue lo scraping di una knowledge base esistente con le opzioni salvate',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        knowledgeBaseId: z.string().describe('ID della knowledge base da ri-scrapare'),
+        deleteExisting: z.boolean().optional().describe('Cancella contenuto esistente prima di ri-scrapare (default: true)')
+    },
+    async ({ agentId, knowledgeBaseId, deleteExisting }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/knowledge/${knowledgeBaseId}/rescrape`, 'POST', {
+                deleteExisting: deleteExisting !== false
+            });
+            return ok(`✅ Rescrape avviato!
+
+Knowledge Base ID: ${knowledgeBaseId}
+Job ID: ${result.jobId || 'N/A'}
+Opzioni precedenti: ${result.optionsUsed ? 'Sì' : 'Default'}
+
+Lo scraping è in background. Usa get_scrape_status per monitorare.`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'get_scrape_status',
+    'Ottieni lo stato di uno scraping job',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        knowledgeBaseId: z.string().describe('ID della knowledge base')
+    },
+    async ({ agentId, knowledgeBaseId }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/knowledge/${knowledgeBaseId}/status`);
+            return ok(`📊 Stato Scraping
+
+Status: ${result.status || 'unknown'}
+Pagine scrapate: ${result.pagesScraped || 0}
+Prodotti estratti: ${result.productsExtracted || 0}
+Errori: ${result.errors?.length || 0}
+Ultimo aggiornamento: ${result.updatedAt || 'N/A'}`);
+        } catch (e) { return err(e); }
+    }
+);
+
 // ======================
 // PRODUCT SCHEMA TOOLS
 // ======================
+
 
 server.tool(
     'list_product_schemas',
