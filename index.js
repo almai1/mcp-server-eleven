@@ -385,6 +385,66 @@ server.tool(
 );
 
 // ======================
+// MULTI-SCHEMA RAG TOOLS
+// ======================
+
+server.tool(
+    'list_product_types',
+    'Lista tutti i tipi di prodotto disponibili per un agente',
+    { agentId: z.string().describe('ID dell\'agente') },
+    async ({ agentId }) => {
+        try {
+            const { productTypes } = await api(`/api/agents/${agentId}/product-config/all`);
+            if (!productTypes || productTypes.length === 0) {
+                return ok('Nessuno schema prodotto configurato.');
+            }
+            const list = productTypes.map(t =>
+                `• ${t.productType}${t.searchPrompt ? ' (searchPrompt configurato)' : ''} - filterModel: ${t.filterModel || 'default'}`
+            ).join('\n');
+            return ok(`Tipi prodotto disponibili:\n\n${list}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'set_search_prompt',
+    'Configura il prompt di ricerca per uno schema prodotto specifico. Questo prompt viene iniettato nel contesto LLM quando l\'utente cerca prodotti di questo tipo.',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        productType: z.string().describe('Nome del tipo prodotto (es: medico_cdi, visite_ed_esami)'),
+        searchPrompt: z.string().describe('Prompt di ricerca da usare per questo tipo di prodotto')
+    },
+    async ({ agentId, productType, searchPrompt }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/product-config`, 'PATCH', {
+                productType,
+                searchPrompt
+            });
+            return ok(`✅ Search prompt per "${productType}" aggiornato!\n\nPrompt:\n${searchPrompt.slice(0, 200)}...`);
+        } catch (e) { return err(e); }
+    }
+);
+
+server.tool(
+    'set_filter_model',
+    'Configura il modello LLM usato per l\'intent detection e il filtraggio prodotti',
+    {
+        agentId: z.string().describe('ID dell\'agente'),
+        productType: z.string().describe('Nome del tipo prodotto'),
+        filterModel: z.string().describe('Modello LLM (es: google/gemini-2.0-flash-001, openai/gpt-4o-mini)')
+    },
+    async ({ agentId, productType, filterModel }) => {
+        try {
+            const result = await api(`/api/agents/${agentId}/product-config`, 'PATCH', {
+                productType,
+                filterModel
+            });
+            return ok(`✅ Filter model per "${productType}" impostato a: ${filterModel}`);
+        } catch (e) { return err(e); }
+    }
+);
+
+// ======================
 // CHAT TOOLS
 // ======================
 
